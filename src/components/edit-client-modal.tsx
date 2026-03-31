@@ -17,9 +17,11 @@ export function EditClientModal({ client, onClose, onUpdate }: EditClientModalPr
   const [submitting, setSubmitting] = useState(false);
 
   const handleSave = async () => {
+    if (!alias.trim()) return;
     setSubmitting(true);
-    await onUpdate(client.id, { alias, notes });
-    onClose();
+    const ok = await onUpdate(client.id, { alias: alias.trim(), notes });
+    setSubmitting(false);
+    if (ok) onClose();
   };
 
   return (

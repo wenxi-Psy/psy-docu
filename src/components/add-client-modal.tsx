@@ -17,8 +17,9 @@ export function AddClientModal({ onClose, onSubmit }: AddClientModalProps) {
   const handleSubmit = async () => {
     if (!alias.trim()) return;
     setSubmitting(true);
-    await onSubmit({ alias: alias.trim(), notes });
-    onClose();
+    const ok = await onSubmit({ alias: alias.trim(), notes });
+    setSubmitting(false);
+    if (ok) onClose();
   };
 
   return (

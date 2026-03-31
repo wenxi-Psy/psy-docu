@@ -22,8 +22,9 @@ export function CompleteConsultationModal({ item, allTags, onClose, onSubmit }: 
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    await onSubmit(item.id, { focus, note, reflection, tags });
-    onClose();
+    const ok = await onSubmit(item.id, { focus, note, reflection, tags });
+    setSubmitting(false);
+    if (ok) onClose();
   };
 
   return (

@@ -93,7 +93,9 @@ export default function SchedulePage() {
   };
 
   const handleRevert = async (item: ScheduleItem) => {
-    await revertToPending(item);
+    const ok = await revertToPending(item);
+    if (ok) setSelectedItemId(null);
+    return ok;
   };
 
   const closeModal = () => setModal({ type: "none" });
