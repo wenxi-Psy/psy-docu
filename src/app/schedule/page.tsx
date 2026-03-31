@@ -12,18 +12,20 @@ import { DetailPanel } from "./detail-panel";
 import { CompleteConsultationModal } from "./complete-consultation-modal";
 import { CompleteSupervisionModal } from "./complete-supervision-modal";
 import { CancelModal } from "./cancel-modal";
+import { EditScheduleModal } from "./edit-schedule-modal";
 import { fmt } from "./utils";
 
 type ViewMode = "day" | "week";
 type ModalState =
   | { type: "none" }
   | { type: "add" }
+  | { type: "edit-schedule"; item: ScheduleItem }
   | { type: "complete-consultation"; item: ScheduleItem }
   | { type: "complete-supervision"; item: ScheduleItem }
   | { type: "cancel"; item: ScheduleItem };
 
 export default function SchedulePage() {
-  const { loading, getItemsForDate, datesWithItems, addEvent, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
+  const { loading, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
   const { clients, allTags, addSession, refetch: refetchClients } = useClients();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
@@ -69,6 +71,10 @@ export default function SchedulePage() {
     setModal({ type: "cancel", item });
   };
 
+  const handleEditSchedule = (item: ScheduleItem) => {
+    setModal({ type: "edit-schedule", item });
+  };
+
   const handleEditRecord = (item: ScheduleItem) => {
     // Re-open the completion modal for editing
     if (item.type === "consultation") {
@@ -76,6 +82,20 @@ export default function SchedulePage() {
     } else if (item.type === "supervision") {
       setModal({ type: "complete-supervision", item });
     }
+  };
+
+  const handleEditScheduleSubmit = async (item: ScheduleItem, updates: { date: string; startTime: string; duration: number; title?: string; clientIds?: string[] }) => {
+    let ok: boolean;
+    if (item.type === "consultation") {
+      ok = await updateSessionSchedule(item.id, updates);
+    } else {
+      ok = await updateEventSchedule(item.id, updates);
+    }
+    if (ok) {
+      await refetchClients();
+      setSelectedItemId(null);
+    }
+    return ok;
   };
 
   const handleCompleteConsultation = async (sessionId: string, updates: { focus: string; note: string; reflection: string; tags: string[] }) => {
@@ -157,6 +177,7 @@ export default function SchedulePage() {
             onClose={() => setSelectedItemId(null)}
             onComplete={handleComplete}
             onCancel={handleCancel}
+            onEditSchedule={handleEditSchedule}
             onEditRecord={handleEditRecord}
             onRevert={handleRevert}
           />
@@ -172,6 +193,7 @@ export default function SchedulePage() {
           onSubmitEvent={addEvent}
           onSubmitConsultation={addSession}
           getClientTotal={(id) => clients.find((c) => c.id === id)?.totalSessions ?? 0}
+          checkConflict={checkConflict}
         />
       )}
       {modal.type === "complete-consultation" && (
@@ -194,6 +216,15 @@ export default function SchedulePage() {
           item={modal.item}
           onClose={closeModal}
           onSubmit={handleCancelItem}
+        />
+      )}
+      {modal.type === "edit-schedule" && (
+        <EditScheduleModal
+          item={modal.item}
+          clients={clients.map((c) => ({ id: c.id, alias: c.alias }))}
+          conflictChecker={checkConflict}
+          onSubmit={(updates) => handleEditScheduleSubmit(modal.item, updates)}
+          onClose={closeModal}
         />
       )}
     </div>
