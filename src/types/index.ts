@@ -17,6 +17,7 @@ export interface Client {
   id: string;
   alias: string;
   status: "active" | "paused" | "ended";
+  color: string | null;
   startDate: string;
   lastSessionDate: string;
   totalSessions: number;

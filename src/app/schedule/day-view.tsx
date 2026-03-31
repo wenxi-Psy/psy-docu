@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { ScheduleItem } from "@/hooks/useSchedule";
 import { TYPE_CONFIG } from "./constants";
+import { getClientColor } from "@/lib/client-colors";
 import { endTime } from "./utils";
 
 interface Props {
@@ -35,8 +36,16 @@ function getSegments(items: ScheduleItem[]): TimeSegment[] {
   return segments;
 }
 
+function getItemStyle(item: ScheduleItem) {
+  if (item.type === "consultation") {
+    const cc = getClientColor(item.clientColor);
+    return { ...TYPE_CONFIG.consultation, bg: cc.bg, border: cc.border, text: cc.text };
+  }
+  return TYPE_CONFIG[item.type];
+}
+
 function EventCard({ item, selected, onClick }: { item: ScheduleItem; selected: boolean; onClick: () => void }) {
-  const config = TYPE_CONFIG[item.type];
+  const config = getItemStyle(item);
   const end = endTime(item.startTime, item.duration);
   const isCompleted = item.status === "completed";
   const isCancelled = item.status === "cancelled";

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Client } from "@/types";
+import { ColorPicker } from "./color-picker";
 
 interface EditClientModalProps {
   client: Client;
   onClose: () => void;
-  onUpdate: (id: string, updates: { alias?: string; notes?: string; status?: string }) => Promise<boolean>;
+  onUpdate: (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }) => Promise<boolean>;
 }
 
 const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/30 transition-colors";
@@ -14,12 +15,13 @@ const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-
 export function EditClientModal({ client, onClose, onUpdate }: EditClientModalProps) {
   const [alias, setAlias] = useState(client.alias);
   const [notes, setNotes] = useState(client.notes);
+  const [color, setColor] = useState<string | null>(client.color);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSave = async () => {
     if (!alias.trim()) return;
     setSubmitting(true);
-    const ok = await onUpdate(client.id, { alias: alias.trim(), notes });
+    const ok = await onUpdate(client.id, { alias: alias.trim(), notes, color });
     setSubmitting(false);
     if (ok) onClose();
   };
@@ -34,6 +36,7 @@ export function EditClientModal({ client, onClose, onUpdate }: EditClientModalPr
         <div className="px-6 pb-6 space-y-4">
           <div><label className="text-xs text-on-surface-variant font-medium block mb-1.5">个案代称</label><input value={alias} onChange={(e) => setAlias(e.target.value)} className={inputClass} /></div>
           <div><label className="text-xs text-on-surface-variant font-medium block mb-1.5">备注</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className={inputClass + " resize-none"} /></div>
+          <div><label className="text-xs text-on-surface-variant font-medium block mb-1.5">日程颜色</label><ColorPicker value={color} onChange={setColor} /></div>
           <button onClick={handleSave} disabled={submitting} className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 transition-colors shadow-ambient">
             {submitting ? "保存中..." : "保存"}
           </button>
