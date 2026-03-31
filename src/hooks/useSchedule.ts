@@ -29,6 +29,7 @@ export interface ScheduleItem {
   number?: number;
   totalSessions?: number;
   clientStartDate?: string;
+  clientColor?: string | null;
   relatedClients?: { id: string; alias: string }[];
 }
 
@@ -90,6 +91,7 @@ export function useSchedule() {
         tags: (s.tags as string[]) ?? [],
         number: (s.number as number) ?? 1, totalSessions: sessionCounts.get(s.client_id as string) ?? 0,
         clientStartDate: (client?.start_date as string) ?? "",
+        clientColor: (client?.color as string | null) ?? null,
       };
     });
 

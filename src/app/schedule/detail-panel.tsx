@@ -2,6 +2,7 @@
 
 import { ScheduleItem } from "@/hooks/useSchedule";
 import { TYPE_CONFIG } from "./constants";
+import { getClientColor } from "@/lib/client-colors";
 import { endTime } from "./utils";
 
 const STATUS_DISPLAY = {
@@ -22,7 +23,9 @@ interface Props {
 export function DetailPanel({ item, onClose, onComplete, onCancel, onEditRecord, onRevert }: Props) {
   if (!item) return null;
 
-  const config = TYPE_CONFIG[item.type];
+  const config = item.type === "consultation"
+    ? (() => { const cc = getClientColor(item.clientColor); return { ...TYPE_CONFIG.consultation, bg: cc.bg, border: cc.border, text: cc.text }; })()
+    : TYPE_CONFIG[item.type];
   const end = endTime(item.startTime, item.duration);
   const statusDisplay = STATUS_DISPLAY[item.status];
 

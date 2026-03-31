@@ -22,6 +22,7 @@ function toClient(row: Record<string, unknown>, sessions: Session[], supervision
     id: row.id as string,
     alias: row.alias as string,
     status: row.status as Client["status"],
+    color: (row.color as string | null) ?? null,
     startDate,
     lastSessionDate,
     totalSessions: completedSessions.length,
@@ -118,25 +119,28 @@ export function useClients() {
     fetchClients();
   }, [fetchClients]);
 
-  const addClient = async (client: { alias: string; notes: string }): Promise<boolean> => {
+  const addClient = async (client: { alias: string; notes: string; color?: string }): Promise<boolean> => {
     const userId = await getUserId();
-    const { error } = await supabase.from("clients").insert({
+    const row: Record<string, unknown> = {
       alias: client.alias,
       notes: client.notes,
       status: "active",
       start_date: new Date().toISOString().split("T")[0],
       user_id: userId,
-    });
+    };
+    if (client.color) row.color = client.color;
+    const { error } = await supabase.from("clients").insert(row);
     if (error) return false;
     await fetchClients();
     return true;
   };
 
-  const updateClient = async (id: string, updates: { alias?: string; notes?: string; status?: string }): Promise<boolean> => {
+  const updateClient = async (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }): Promise<boolean> => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.alias !== undefined) dbUpdates.alias = updates.alias;
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.color !== undefined) dbUpdates.color = updates.color;
 
     const { error } = await supabase.from("clients").update(dbUpdates).eq("id", id);
     if (error) return false;

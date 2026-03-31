@@ -2,7 +2,16 @@
 
 import { ScheduleItem } from "@/hooks/useSchedule";
 import { WEEKDAYS, TYPE_CONFIG } from "./constants";
+import { getClientColor } from "@/lib/client-colors";
 import { fmt, getWeekDays } from "./utils";
+
+function getItemStyle(item: ScheduleItem) {
+  if (item.type === "consultation") {
+    const cc = getClientColor(item.clientColor);
+    return { ...TYPE_CONFIG.consultation, bg: cc.bg, border: cc.border, text: cc.text };
+  }
+  return TYPE_CONFIG[item.type];
+}
 
 interface Props {
   selectedDate: Date;
@@ -38,7 +47,7 @@ export function WeekView({ selectedDate, getItemsForDate, onDayClick }: Props) {
                 <div className="text-[10px] text-on-surface-variant/50 text-center mt-4">无安排</div>
               )}
               {items.map((item) => {
-                const config = TYPE_CONFIG[item.type];
+                const config = getItemStyle(item);
                 const isCompleted = item.status === "completed";
                 const isCancelled = item.status === "cancelled";
                 return (
