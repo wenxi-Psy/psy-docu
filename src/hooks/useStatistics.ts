@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 export interface MonthlyData {
@@ -23,14 +23,19 @@ export function useStatistics() {
   const [stats, setStats] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchStats() {
+  const fetchStats = useCallback(async () => {
       const now = new Date();
       const [sessRes, evtRes, clientRes] = await Promise.all([
         supabase.from("sessions").select("date, duration, status"),
         supabase.from("events").select("type, date, duration, status").eq("type", "supervision"),
         supabase.from("clients").select("status"),
       ]);
+
+      if (sessRes.error || evtRes.error || clientRes.error) {
+        console.error("fetchStats error:", sessRes.error, evtRes.error, clientRes.error);
+        setLoading(false);
+        return;
+      }
 
       // Only count completed sessions and supervisions
       const sessions = (sessRes.data ?? []).filter((s) => s.status === "completed");
@@ -70,9 +75,11 @@ export function useStatistics() {
 
       setStats({ totalSessions, totalMinutes, activeClients, pausedClients, endedClients, monthlyTrend, availableMonths });
       setLoading(false);
-    }
-    fetchStats();
   }, []);
 
-  return { stats, loading };
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  return { stats, loading, refetch: fetchStats };
 }

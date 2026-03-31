@@ -60,6 +60,12 @@ export function useClients() {
       supabase.from("events").select("id, status").eq("type", "supervision"),
     ]);
 
+    if (clientRes.error || sessionRes.error || ecRes.error || evtRes.error) {
+      console.error("fetchClients error:", clientRes.error, sessionRes.error, ecRes.error, evtRes.error);
+      setLoading(false);
+      return;
+    }
+
     const clientRows = clientRes.data ?? [];
     const sessionRows = sessionRes.data ?? [];
     const ecRows = ecRes.data ?? [];

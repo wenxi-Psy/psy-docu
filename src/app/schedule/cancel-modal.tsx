@@ -17,8 +17,9 @@ export function CancelModal({ item, onClose, onSubmit }: Props) {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    await onSubmit(item, reason);
-    onClose();
+    const ok = await onSubmit(item, reason);
+    setSubmitting(false);
+    if (ok) onClose();
   };
 
   const typeLabel = item.type === "consultation" ? "咨询" : item.type === "supervision" ? "督导" : "日程";

@@ -92,7 +92,7 @@ export function ClientDetail({ client, allTags, onAddSession, onUpdateSession, o
       {showAddSession && (
         <AddSessionModal clientAlias={client.alias} allTags={allTags}
           onClose={() => setShowAddSession(false)}
-          onSubmit={(s) => onAddSession(client.id, s, client.totalSessions)}
+          onSubmit={(s) => onAddSession(client.id, s, client.totalSessions) }
           onDeleteTag={onDeleteTag} />
       )}
       {showEditClient && (

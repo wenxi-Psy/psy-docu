@@ -32,15 +32,16 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    let ok = false;
     try {
       if (step === "consultation" && selectedClientId) {
-        await onSubmitConsultation(selectedClientId, { date, startTime, duration, focus, note, reflection: "", tags: [] }, getClientTotal(selectedClientId));
+        ok = await onSubmitConsultation(selectedClientId, { date, startTime, duration, focus, note, reflection: "", tags: [] }, getClientTotal(selectedClientId));
       } else if (step === "supervision") {
-        await onSubmitEvent({ type: "supervision", title: title || "督导", date, startTime, duration, note, clientIds: selectedClientIds.length > 0 ? selectedClientIds : undefined });
+        ok = await onSubmitEvent({ type: "supervision", title: title || "督导", date, startTime, duration, note, clientIds: selectedClientIds.length > 0 ? selectedClientIds : undefined });
       } else if (step === "other") {
-        await onSubmitEvent({ type: "other", title: otherTitle || "其他日程", date, startTime, duration, note });
+        ok = await onSubmitEvent({ type: "other", title: otherTitle || "其他日程", date, startTime, duration, note });
       }
-      onClose();
+      if (ok) onClose();
     } finally { setSubmitting(false); }
   };
 

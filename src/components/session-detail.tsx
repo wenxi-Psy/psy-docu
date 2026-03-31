@@ -23,9 +23,13 @@ export function SessionDetail({ session, allTags, onUpdate, onDeleteTag }: Sessi
   const [startTime, setStartTime] = useState(session.startTime);
   const [duration, setDuration] = useState(session.duration);
 
+  const [saving, setSaving] = useState(false);
+
   const handleSave = async () => {
-    await onUpdate(session.id, { focus, note, reflection, tags, date, startTime, duration });
-    setEditing(false);
+    setSaving(true);
+    const ok = await onUpdate(session.id, { focus, note, reflection, tags, date, startTime, duration });
+    setSaving(false);
+    if (ok) setEditing(false);
   };
 
   if (!editing) {
@@ -68,8 +72,8 @@ export function SessionDetail({ session, allTags, onUpdate, onDeleteTag }: Sessi
       <div><label className="text-xs text-on-surface-variant">反思</label><textarea value={reflection} onChange={(e) => setReflection(e.target.value)} rows={3} className={inputClass + " resize-none"} /></div>
       <div><label className="text-xs text-on-surface-variant">标签</label><TagInput tags={tags} allTags={allTags} onChange={setTags} onDeleteTag={onDeleteTag} /></div>
       <div className="flex gap-3">
-        <button onClick={() => setEditing(false)} className="flex-1 py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant">取消</button>
-        <button onClick={handleSave} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium">保存</button>
+        <button onClick={() => setEditing(false)} disabled={saving} className="flex-1 py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant">取消</button>
+        <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-40">{saving ? "保存中..." : "保存"}</button>
       </div>
     </div>
   );

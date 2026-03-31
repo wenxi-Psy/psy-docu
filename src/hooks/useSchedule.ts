@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import { ScheduleStatus } from "@/types";
 
@@ -43,6 +43,12 @@ export function useSchedule() {
       supabase.from("clients").select("*"),
       supabase.from("event_clients").select("*"),
     ]);
+
+    if (sessRes.error || evtRes.error || clientRes.error || ecRes.error) {
+      console.error("fetchSchedule error:", sessRes.error, evtRes.error, clientRes.error, ecRes.error);
+      setLoading(false);
+      return;
+    }
 
     const sessionRows = sessRes.data ?? [];
     const eventRows = evtRes.data ?? [];
@@ -108,7 +114,7 @@ export function useSchedule() {
     [items]
   );
 
-  const datesWithItems = new Set(items.map((i) => i.date));
+  const datesWithItems = useMemo(() => new Set(items.map((i) => i.date)), [items]);
 
   const addEvent = async (event: {
     type: EventType; title: string; date: string; startTime: string; duration: number; note: string; clientIds?: string[];

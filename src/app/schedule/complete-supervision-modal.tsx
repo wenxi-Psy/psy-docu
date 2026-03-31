@@ -17,8 +17,9 @@ export function CompleteSupervisionModal({ item, onClose, onSubmit }: Props) {
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    await onSubmit(item.id, note);
-    onClose();
+    const ok = await onSubmit(item.id, note);
+    setSubmitting(false);
+    if (ok) onClose();
   };
 
   return (

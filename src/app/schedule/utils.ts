@@ -1,4 +1,4 @@
-import { TIME_START, HOUR_HEIGHT } from "./constants";
+import { TIME_START, TIME_END, HOUR_HEIGHT } from "./constants";
 
 export function fmt(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -34,6 +34,6 @@ export function getCurrentTimeY(): number | null {
   const now = new Date();
   const h = now.getHours();
   const m = now.getMinutes();
-  if (h < TIME_START || h >= 22) return null;
+  if (h < TIME_START || h >= TIME_END) return null;
   return ((h - TIME_START) * 60 + m) / 60 * HOUR_HEIGHT;
 }

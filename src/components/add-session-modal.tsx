@@ -7,7 +7,7 @@ interface AddSessionModalProps {
   clientAlias: string;
   allTags: string[];
   onClose: () => void;
-  onSubmit: (session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }) => void;
+  onSubmit: (session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }) => Promise<boolean>;
   onDeleteTag?: (tag: string) => Promise<boolean>;
 }
 
@@ -23,9 +23,13 @@ export function AddSessionModal({ clientAlias, allTags, onClose, onSubmit, onDel
   const [reflection, setReflection] = useState("");
   const [tags, setTags] = useState<string[]>([]);
 
-  const handleSubmit = () => {
-    onSubmit({ date, startTime, duration, focus, note, reflection, tags });
-    onClose();
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    const ok = await onSubmit({ date, startTime, duration, focus, note, reflection, tags });
+    setSubmitting(false);
+    if (ok) onClose();
   };
 
   return (
@@ -45,7 +49,7 @@ export function AddSessionModal({ clientAlias, allTags, onClose, onSubmit, onDel
           <div><label className="text-xs text-on-surface-variant block mb-1">笔记</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="咨询笔记" className={inputClass + " resize-none"} /></div>
           <div><label className="text-xs text-on-surface-variant block mb-1">反思</label><textarea value={reflection} onChange={(e) => setReflection(e.target.value)} rows={2} placeholder="咨询后反思" className={inputClass + " resize-none"} /></div>
           <div><label className="text-xs text-on-surface-variant block mb-1">标签</label><TagInput tags={tags} allTags={allTags} onChange={setTags} onDeleteTag={onDeleteTag} /></div>
-          <button onClick={handleSubmit} className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover transition-colors shadow-ambient">提交并存档</button>
+          <button onClick={handleSubmit} disabled={submitting} className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 transition-colors shadow-ambient">{submitting ? "保存中..." : "提交并存档"}</button>
         </div>
       </div>
     </div>
