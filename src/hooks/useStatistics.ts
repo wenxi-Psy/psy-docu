@@ -27,13 +27,14 @@ export function useStatistics() {
     async function fetchStats() {
       const now = new Date();
       const [sessRes, evtRes, clientRes] = await Promise.all([
-        supabase.from("sessions").select("date, duration"),
-        supabase.from("events").select("type, date, duration").eq("type", "supervision"),
+        supabase.from("sessions").select("date, duration, status"),
+        supabase.from("events").select("type, date, duration, status").eq("type", "supervision"),
         supabase.from("clients").select("status"),
       ]);
 
-      const sessions = sessRes.data ?? [];
-      const supervisions = evtRes.data ?? [];
+      // Only count completed sessions and supervisions
+      const sessions = (sessRes.data ?? []).filter((s) => s.status === "completed");
+      const supervisions = (evtRes.data ?? []).filter((s) => s.status === "completed");
       const clients = clientRes.data ?? [];
 
       const totalSessions = sessions.length;

@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { ScheduleItem } from "@/hooks/useSchedule";
 import { TYPE_CONFIG } from "./constants";
 import { endTime } from "./utils";
-import { CurrentTimeIndicator } from "./current-time-indicator";
 
 interface Props {
   items: ScheduleItem[];
@@ -39,13 +38,15 @@ function getSegments(items: ScheduleItem[]): TimeSegment[] {
 function EventCard({ item, selected, onClick }: { item: ScheduleItem; selected: boolean; onClick: () => void }) {
   const config = TYPE_CONFIG[item.type];
   const end = endTime(item.startTime, item.duration);
+  const isCompleted = item.status === "completed";
+  const isCancelled = item.status === "cancelled";
 
   return (
     <button
       onClick={onClick}
       className={`w-full text-left rounded-2xl p-4 border transition-all ${config.bg} ${config.border} ${
         selected ? "ring-2 ring-primary/30 shadow-md" : "hover:shadow-sm"
-      }`}
+      } ${isCompleted ? "opacity-75" : ""} ${isCancelled ? "opacity-40" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -57,6 +58,12 @@ function EventCard({ item, selected, onClick }: { item: ScheduleItem; selected: 
             </span>
             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/60 text-on-surface-variant font-medium">{config.label}</span>
             {item.number && <span className="text-xs text-on-surface-variant">第{item.number}次</span>}
+            {item.status === "completed" && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary-container/50 text-primary font-medium">✓ 已完成</span>
+            )}
+            {item.status === "cancelled" && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-medium">已取消</span>
+            )}
           </div>
 
           {/* Time */}
@@ -102,14 +109,12 @@ function SegmentSection({ segment, selectedItemId, onItemClick, isToday }: {
 }) {
   const hasItems = segment.items.length > 0;
 
-  // Check if "now" falls in this segment
   const now = new Date();
   const currentHour = now.getHours();
   const isCurrentSegment = isToday && currentHour >= segment.startHour && currentHour < segment.endHour;
 
   return (
     <div>
-      {/* Segment header */}
       <div className="flex items-center gap-3 mb-3">
         <h3 className={`text-sm font-semibold ${isCurrentSegment ? "text-primary" : "text-on-surface-variant"}`}>
           {segment.label}
@@ -123,13 +128,17 @@ function SegmentSection({ segment, selectedItemId, onItemClick, isToday }: {
         )}
       </div>
 
-      {/* Events */}
       {hasItems && (
         <div className="space-y-3 ml-4 pl-4 border-l-2 border-outline-variant/30">
           {segment.items.map((item) => (
             <div key={item.id} className="relative">
-              {/* Timeline dot */}
-              <div className="absolute -left-[21px] top-5 w-2.5 h-2.5 rounded-full bg-surface-container-low border-2 border-on-surface-variant/30" />
+              <div className={`absolute -left-[21px] top-5 w-2.5 h-2.5 rounded-full border-2 ${
+                item.status === "completed"
+                  ? "bg-primary border-primary/30"
+                  : item.status === "cancelled"
+                  ? "bg-surface-dim border-surface-dim"
+                  : "bg-surface-container-low border-on-surface-variant/30"
+              }`} />
               <EventCard
                 item={item}
                 selected={selectedItemId === item.id}

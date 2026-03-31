@@ -34,37 +34,38 @@ export default function LoginPage() {
     }
   };
 
+  const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/30 transition-colors";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="w-full max-w-sm mx-4">
-        <div className="text-center mb-8">
-          <span className="text-4xl">🌿</span>
-          <h1 className="text-xl font-bold text-gray-900 mt-3">宁静账本</h1>
-          <p className="text-sm text-gray-400 mt-1">独立执业咨询师的个案管理工具</p>
+        <div className="text-center mb-10">
+          <span className="text-5xl">🌿</span>
+          <h1 className="text-2xl font-bold text-on-surface mt-4 tracking-tight">宁静账本</h1>
+          <p className="text-[11px] text-on-surface-variant mt-1 tracking-[0.15em] font-medium">DIGITAL SANCTUARY</p>
+          <p className="text-sm text-on-surface-variant mt-3">独立执业咨询师的个案管理工具</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="glass rounded-[2rem] shadow-ambient p-8 space-y-5">
           <div>
-            <label className="text-xs text-gray-400 block mb-1">邮箱</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="your@email.com"
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-green-600" />
+            <label className="text-xs text-on-surface-variant font-medium block mb-1.5">邮箱</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="your@email.com" className={inputClass} />
           </div>
           <div>
-            <label className="text-xs text-gray-400 block mb-1">密码</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="至少6位" minLength={6}
-              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:outline-none focus:border-green-600" />
+            <label className="text-xs text-on-surface-variant font-medium block mb-1.5">密码</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="至少6位" minLength={6} className={inputClass} />
           </div>
 
-          {error && <p className="text-xs text-red-500">{error}</p>}
-          {message && <p className="text-xs text-green-600">{message}</p>}
+          {error && <p className="text-xs text-error-container">{error}</p>}
+          {message && <p className="text-xs text-primary">{message}</p>}
 
           <button type="submit" disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-green-700 text-white text-sm font-medium hover:bg-green-800 disabled:opacity-40">
+            className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 transition-colors shadow-ambient">
             {loading ? "请稍候..." : isSignUp ? "注册" : "登录"}
           </button>
 
           <button type="button" onClick={() => { setIsSignUp(!isSignUp); setError(""); setMessage(""); }}
-            className="w-full text-center text-xs text-gray-400 hover:text-gray-600">
+            className="w-full text-center text-xs text-on-surface-variant hover:text-on-surface transition-colors">
             {isSignUp ? "已有账号？登录" : "没有账号？注册"}
           </button>
         </form>

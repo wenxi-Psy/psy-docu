@@ -17,54 +17,57 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside className={`flex flex-col h-full bg-white border-r border-gray-100 transition-all duration-200 ${collapsed ? "w-16" : "w-56"}`}>
+    <aside className={`flex flex-col h-full bg-surface-container-low rounded-r-[32px] transition-all duration-200 ${collapsed ? "w-16" : "w-64"}`}>
       {/* Logo */}
-      <div className="p-4 flex items-center gap-2">
-        <span className="text-xl">🌿</span>
+      <div className="px-6 pt-8 pb-6 flex items-center gap-3">
+        <span className="text-2xl">🌿</span>
         {!collapsed && (
           <div>
-            <div className="font-bold text-sm text-gray-900">宁静账本</div>
-            <div className="text-[10px] text-gray-400 tracking-widest">SERENE LEDGER</div>
+            <div className="font-bold text-[15px] text-on-surface tracking-tight">宁静账本</div>
+            <div className="text-[10px] text-on-surface-variant tracking-[0.15em] font-medium">DIGITAL SANCTUARY</div>
           </div>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 space-y-1">
+      <nav className="flex-1 px-3 space-y-1">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                active ? "bg-green-50 text-green-800 font-medium" : "text-gray-600 hover:bg-gray-50"
+              className={`flex items-center gap-4 px-4 py-3 rounded-2xl text-sm transition-all duration-150 ${
+                active
+                  ? "bg-primary-container/50 text-primary font-semibold"
+                  : "text-on-surface-variant hover:bg-surface-container-lowest/60 hover:text-on-surface"
               }`}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d={item.icon} />
               </svg>
-              {!collapsed && <span>{item.label}</span>}
+              {!collapsed && <span className="tracking-tight">{item.label}</span>}
+              {active && !collapsed && <div className="ml-auto w-1 h-5 rounded-full bg-primary" />}
             </Link>
           );
         })}
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-gray-100 space-y-2">
+      <div className="px-4 pb-6 space-y-3">
         {!collapsed && user && (
-          <div className="flex items-center gap-2 px-2">
-            <div className="w-7 h-7 rounded-full bg-gray-800 text-white flex items-center justify-center text-xs font-bold">
+          <div className="flex items-center gap-3 px-3 py-2">
+            <div className="w-8 h-8 rounded-full bg-on-surface text-surface-container-lowest flex items-center justify-center text-xs font-bold">
               {(user.email?.[0] ?? "U").toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-xs text-gray-400">咨询师</div>
+              <div className="text-[11px] text-on-surface-variant font-medium">咨询师</div>
             </div>
-            <button onClick={signOut} className="text-xs text-gray-400 hover:text-gray-600" title="退出登录">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <button onClick={signOut} className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/60 transition-colors" title="退出登录">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
               </svg>
             </button>
           </div>
         )}
-        <button onClick={() => setCollapsed(!collapsed)} className="w-full flex justify-center text-gray-400 hover:text-gray-600">
+        <button onClick={() => setCollapsed(!collapsed)} className="w-full flex justify-center py-1 text-on-surface-variant/50 hover:text-on-surface-variant transition-colors">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points={collapsed ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
           </svg>

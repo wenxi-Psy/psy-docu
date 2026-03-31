@@ -39,10 +39,13 @@ export function WeekView({ selectedDate, getItemsForDate, onDayClick }: Props) {
               )}
               {items.map((item) => {
                 const config = TYPE_CONFIG[item.type];
+                const isCompleted = item.status === "completed";
+                const isCancelled = item.status === "cancelled";
                 return (
-                  <div key={item.id} className={`rounded-lg px-1.5 py-1 ${config.bg} border ${config.border}`}>
+                  <div key={item.id} className={`rounded-lg px-1.5 py-1 ${config.bg} border ${config.border} ${isCompleted ? "opacity-75" : ""} ${isCancelled ? "opacity-40" : ""}`}>
                     <div className="text-[10px] text-on-surface-variant">{item.startTime}</div>
                     <div className={`text-[11px] font-medium ${config.text} truncate`}>
+                      {item.status === "completed" && "✓ "}
                       {item.type === "consultation" ? item.clientAlias : item.title}
                     </div>
                   </div>

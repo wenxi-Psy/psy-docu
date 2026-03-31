@@ -4,16 +4,27 @@ import { ScheduleItem } from "@/hooks/useSchedule";
 import { TYPE_CONFIG } from "./constants";
 import { endTime } from "./utils";
 
+const STATUS_DISPLAY = {
+  pending: { label: "待进行", class: "bg-amber-bg text-amber" },
+  completed: { label: "已完成", class: "bg-primary-container/50 text-primary" },
+  cancelled: { label: "已取消", class: "bg-surface-container-low text-on-surface-variant" },
+} as const;
+
 interface Props {
   item: ScheduleItem | null;
   onClose: () => void;
+  onComplete: (item: ScheduleItem) => void;
+  onCancel: (item: ScheduleItem) => void;
+  onEditRecord: (item: ScheduleItem) => void;
+  onRevert: (item: ScheduleItem) => void;
 }
 
-export function DetailPanel({ item, onClose }: Props) {
+export function DetailPanel({ item, onClose, onComplete, onCancel, onEditRecord, onRevert }: Props) {
   if (!item) return null;
 
   const config = TYPE_CONFIG[item.type];
   const end = endTime(item.startTime, item.duration);
+  const statusDisplay = STATUS_DISPLAY[item.status];
 
   return (
     <div className="w-80 flex-shrink-0 border-l border-outline-variant/50 pl-6 space-y-5 overflow-y-auto">
@@ -23,6 +34,9 @@ export function DetailPanel({ item, onClose }: Props) {
           <div className="flex items-center gap-2 mb-1">
             <span>{config.emoji}</span>
             <span className={`text-[11px] px-2 py-0.5 rounded-full ${config.bg} ${config.text} font-medium`}>{config.label}</span>
+            <span className={`text-[11px] px-2 py-0.5 rounded-full ${statusDisplay.class} font-medium`}>
+              {item.status === "completed" && "✓ "}{statusDisplay.label}
+            </span>
           </div>
           <h3 className="text-lg font-bold text-on-surface">
             {item.type === "consultation" ? item.clientAlias : item.title}
@@ -53,6 +67,14 @@ export function DetailPanel({ item, onClose }: Props) {
         </div>
       )}
 
+      {/* Reflection (consultation only) */}
+      {item.reflection && (
+        <div className="bg-primary-container/30 rounded-2xl p-4">
+          <div className="text-xs text-primary mb-1">反思</div>
+          <p className="text-sm text-on-surface whitespace-pre-wrap">{item.reflection}</p>
+        </div>
+      )}
+
       {/* Related clients (supervision) */}
       {item.relatedClients && item.relatedClients.length > 0 && (
         <div>
@@ -60,7 +82,7 @@ export function DetailPanel({ item, onClose }: Props) {
           <div className="flex flex-wrap gap-1.5">
             {item.relatedClients.map((c) => (
               <a key={c.id} href={`/?client=${c.id}`}
-                className="text-xs px-2.5 py-1 rounded-full bg-secondary-container/50 text-[#1e5f8a] hover:bg-secondary-container transition-colors">
+                className="text-xs px-2.5 py-1 rounded-full bg-secondary-container/50 text-on-secondary-container hover:bg-secondary-container transition-colors">
                 {c.alias}
               </a>
             ))}
@@ -85,7 +107,51 @@ export function DetailPanel({ item, onClose }: Props) {
         </div>
       )}
 
-      {/* Action: go to client */}
+      {/* Cancel reason */}
+      {item.status === "cancelled" && item.cancelReason && (
+        <div className="bg-error-container-bg rounded-xl p-3">
+          <div className="text-xs text-error-container mb-1">取消原因</div>
+          <p className="text-sm text-on-surface whitespace-pre-wrap">{item.cancelReason}</p>
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="space-y-2 pt-2">
+        {item.status === "pending" && (
+          <>
+            <button onClick={() => onComplete(item)}
+              className="w-full py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors">
+              ✓ 完成
+            </button>
+            <button onClick={() => onCancel(item)}
+              className="w-full py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors">
+              取消日程
+            </button>
+          </>
+        )}
+        {item.status === "completed" && (
+          <>
+            {item.type !== "other" && (
+              <button onClick={() => onEditRecord(item)}
+                className="w-full py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors">
+                编辑记录
+              </button>
+            )}
+            <button onClick={() => onRevert(item)}
+              className="w-full py-2.5 rounded-xl text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors">
+              标记为待进行
+            </button>
+          </>
+        )}
+        {item.status === "cancelled" && (
+          <button onClick={() => onRevert(item)}
+            className="w-full py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors">
+            恢复日程
+          </button>
+        )}
+      </div>
+
+      {/* Link to client */}
       {item.type === "consultation" && item.clientId && (
         <a href={`/?client=${item.clientId}`}
           className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary-hover font-medium transition-colors">

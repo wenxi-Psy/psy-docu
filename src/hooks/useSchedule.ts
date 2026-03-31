@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
+import { ScheduleStatus } from "@/types";
 
 async function getUserId(): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
@@ -18,9 +19,12 @@ export interface ScheduleItem {
   startTime: string;
   duration: number;
   note: string;
+  status: ScheduleStatus;
+  cancelReason?: string;
   clientId?: string;
   clientAlias?: string;
   focus?: string;
+  reflection?: string;
   tags?: string[];
   number?: number;
   totalSessions?: number;
@@ -48,10 +52,13 @@ export function useSchedule() {
     const clientMap = new Map<string, Record<string, unknown>>();
     for (const c of clientRows) clientMap.set(c.id as string, c);
 
+    // Only count completed sessions for the total display
     const sessionCounts = new Map<string, number>();
     for (const s of sessionRows) {
-      const cid = s.client_id as string;
-      sessionCounts.set(cid, (sessionCounts.get(cid) || 0) + 1);
+      if (s.status === "completed") {
+        const cid = s.client_id as string;
+        sessionCounts.set(cid, (sessionCounts.get(cid) || 0) + 1);
+      }
     }
 
     const eventClientsMap = new Map<string, { id: string; alias: string }[]>();
@@ -70,8 +77,11 @@ export function useSchedule() {
         title: (client?.alias as string) ?? "咨询",
         date: s.date as string, startTime: (s.start_time as string) ?? "09:00",
         duration: (s.duration as number) ?? 50, note: (s.note as string) ?? "",
+        status: (s.status as ScheduleStatus) ?? "pending",
+        cancelReason: (s.cancel_reason as string) ?? "",
         clientId: s.client_id as string, clientAlias: (client?.alias as string) ?? "未知",
-        focus: (s.focus as string) ?? "", tags: (s.tags as string[]) ?? [],
+        focus: (s.focus as string) ?? "", reflection: (s.reflection as string) ?? "",
+        tags: (s.tags as string[]) ?? [],
         number: (s.number as number) ?? 1, totalSessions: sessionCounts.get(s.client_id as string) ?? 0,
         clientStartDate: (client?.start_date as string) ?? "",
       };
@@ -81,7 +91,10 @@ export function useSchedule() {
       id: e.id as string, type: e.type as EventType,
       title: (e.title as string) ?? "", date: e.date as string,
       startTime: (e.start_time as string) ?? "09:00", duration: (e.duration as number) ?? 60,
-      note: (e.note as string) ?? "", relatedClients: eventClientsMap.get(e.id as string) ?? [],
+      note: (e.note as string) ?? "",
+      status: (e.status as ScheduleStatus) ?? "pending",
+      cancelReason: (e.cancel_reason as string) ?? "",
+      relatedClients: eventClientsMap.get(e.id as string) ?? [],
     }));
 
     setItems([...sessionItems, ...eventItems]);
@@ -105,6 +118,7 @@ export function useSchedule() {
     const { data, error } = await supabase.from("events").insert({
       type: event.type, title: event.title, date: event.date,
       start_time: event.startTime, duration: event.duration, note: event.note, user_id: userId,
+      status: "pending",
     }).select("id").single();
 
     if (error || !data) return false;
@@ -118,5 +132,52 @@ export function useSchedule() {
     return true;
   };
 
-  return { items, loading, getItemsForDate, datesWithItems, addEvent, refetch: fetchSchedule };
+  const completeConsultation = async (
+    sessionId: string,
+    updates: { focus: string; note: string; reflection: string; tags: string[] }
+  ): Promise<boolean> => {
+    const { error } = await supabase.from("sessions").update({
+      status: "completed",
+      focus: updates.focus,
+      note: updates.note,
+      reflection: updates.reflection,
+      tags: updates.tags,
+    }).eq("id", sessionId);
+    if (error) return false;
+    await fetchSchedule();
+    return true;
+  };
+
+  const completeEvent = async (eventId: string, note?: string): Promise<boolean> => {
+    const updates: Record<string, unknown> = { status: "completed" };
+    if (note !== undefined) updates.note = note;
+    const { error } = await supabase.from("events").update(updates).eq("id", eventId);
+    if (error) return false;
+    await fetchSchedule();
+    return true;
+  };
+
+  const cancelItem = async (item: ScheduleItem, cancelReason: string): Promise<boolean> => {
+    const table = item.type === "consultation" ? "sessions" : "events";
+    const { error } = await supabase.from(table).update({
+      status: "cancelled",
+      cancel_reason: cancelReason,
+    }).eq("id", item.id);
+    if (error) return false;
+    await fetchSchedule();
+    return true;
+  };
+
+  const revertToPending = async (item: ScheduleItem): Promise<boolean> => {
+    const table = item.type === "consultation" ? "sessions" : "events";
+    const { error } = await supabase.from(table).update({
+      status: "pending",
+      cancel_reason: null,
+    }).eq("id", item.id);
+    if (error) return false;
+    await fetchSchedule();
+    return true;
+  };
+
+  return { items, loading, getItemsForDate, datesWithItems, addEvent, completeConsultation, completeEvent, cancelItem, revertToPending, refetch: fetchSchedule };
 }

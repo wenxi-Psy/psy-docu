@@ -26,26 +26,26 @@ export function TagInput({ tags, allTags, onChange, onDeleteTag }: TagInputProps
     <div>
       <div className="flex flex-wrap gap-1.5 mb-2">
         {tags.map((tag) => (
-          <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-50 text-green-800">
+          <span key={tag} className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container">
             {tag}
-            <button onClick={() => removeTag(tag)} className="hover:text-green-600">×</button>
+            <button onClick={() => removeTag(tag)} className="hover:text-primary">×</button>
           </span>
         ))}
       </div>
       <div className="flex gap-2">
         <input value={input} onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(input); } }}
-          placeholder="输入标签后回车" className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-green-600" />
+          placeholder="输入标签后回车" className="flex-1 rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-colors" />
       </div>
       {suggestions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {suggestions.map((tag) => (
             <span key={tag} className="inline-flex items-center gap-1">
-              <button onClick={() => addTag(tag)} className="text-xs px-2 py-1 rounded-full border border-gray-200 text-gray-500 hover:border-green-300 hover:text-green-700">
+              <button onClick={() => addTag(tag)} className="text-xs px-2 py-1 rounded-full border border-outline-variant text-on-surface-variant hover:border-primary/30 hover:text-primary transition-colors">
                 + {tag}
               </button>
               {onDeleteTag && (
-                <button onClick={() => onDeleteTag(tag)} className="text-gray-300 hover:text-red-400 text-xs">×</button>
+                <button onClick={() => onDeleteTag(tag)} className="text-on-surface-variant/40 hover:text-error-container text-xs">×</button>
               )}
             </span>
           ))}

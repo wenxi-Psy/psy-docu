@@ -15,17 +15,20 @@ function toClient(row: Record<string, unknown>, sessions: Session[], supervision
   const lastSessionDate = lastSession?.date ?? startDate;
   const days = Math.floor((Date.now() - new Date(startDate).getTime()) / 86400000);
 
+  // Only count completed sessions for the total
+  const completedSessions = sessions.filter((s) => s.status === "completed");
+
   return {
     id: row.id as string,
     alias: row.alias as string,
     status: row.status as Client["status"],
     startDate,
     lastSessionDate,
-    totalSessions: sessions.length,
+    totalSessions: completedSessions.length,
     totalSupervisions: supervisionCount,
     days,
     notes: (row.notes as string) ?? "",
-    sessions,
+    sessions, // Timeline shows all sessions (pending/completed/cancelled)
   };
 }
 
@@ -40,6 +43,7 @@ function toSession(row: Record<string, unknown>): Session {
     note: (row.note as string) ?? "",
     reflection: (row.reflection as string) ?? "",
     tags: (row.tags as string[]) ?? [],
+    status: (row.status as Session["status"]) ?? "completed",
   };
 }
 
@@ -49,15 +53,17 @@ export function useClients() {
   const [allTags, setAllTags] = useState<string[]>([]);
 
   const fetchClients = useCallback(async () => {
-    const [clientRes, sessionRes, ecRes] = await Promise.all([
+    const [clientRes, sessionRes, ecRes, evtRes] = await Promise.all([
       supabase.from("clients").select("*").order("created_at"),
       supabase.from("sessions").select("*").order("date", { ascending: false }),
       supabase.from("event_clients").select("client_id, event_id"),
+      supabase.from("events").select("id, status").eq("type", "supervision"),
     ]);
 
     const clientRows = clientRes.data ?? [];
     const sessionRows = sessionRes.data ?? [];
     const ecRows = ecRes.data ?? [];
+    const evtRows = evtRes.data ?? [];
 
     // Collect all tags
     const tagSet = new Set<string>();
@@ -66,11 +72,19 @@ export function useClients() {
     });
     setAllTags(Array.from(tagSet));
 
-    // Count supervisions per client
+    // Build a set of completed supervision event IDs
+    const completedSupervisionIds = new Set(
+      evtRows.filter((e) => e.status === "completed").map((e) => e.id as string)
+    );
+
+    // Count supervisions per client (only completed ones)
     const supCounts = new Map<string, number>();
     for (const ec of ecRows) {
+      const eid = ec.event_id as string;
       const cid = ec.client_id as string;
-      supCounts.set(cid, (supCounts.get(cid) || 0) + 1);
+      if (completedSupervisionIds.has(eid)) {
+        supCounts.set(cid, (supCounts.get(cid) || 0) + 1);
+      }
     }
 
     // Group sessions by client
@@ -140,6 +154,7 @@ export function useClients() {
       note: session.note,
       reflection: session.reflection,
       tags: session.tags,
+      status: "completed",
       user_id: userId,
     });
     if (error) return false;

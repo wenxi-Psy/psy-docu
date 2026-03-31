@@ -1,3 +1,5 @@
+export type ScheduleStatus = "pending" | "completed" | "cancelled";
+
 export interface Session {
   id: string;
   date: string;
@@ -8,6 +10,7 @@ export interface Session {
   note: string;
   reflection: string;
   tags: string[];
+  status: ScheduleStatus;
 }
 
 export interface Client {

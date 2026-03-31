@@ -1,6 +1,7 @@
 "use client";
 
 import { WEEKDAYS } from "./constants";
+import { getWeekDays, fmt } from "./utils";
 
 type ViewMode = "day" | "week";
 
@@ -12,22 +13,50 @@ interface Props {
   consultationCount: number;
   onAddClick: () => void;
   onTodayClick: () => void;
+  onWeekChange?: (offset: number) => void;
   isToday: boolean;
 }
 
-export function ScheduleControlBar({ selectedDate, viewMode, onViewModeChange, consultationCount, onAddClick, onTodayClick, isToday }: Props) {
+export function ScheduleControlBar({ selectedDate, viewMode, onViewModeChange, consultationCount, onAddClick, onTodayClick, onWeekChange, isToday }: Props) {
+  // For week view, show the week range instead of a single date
+  const weekDays = getWeekDays(selectedDate);
+  const weekStart = weekDays[0];
+  const weekEnd = weekDays[6];
+
+  const weekLabel = (() => {
+    const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
+    if (sameMonth) {
+      return `${weekStart.getMonth() + 1}月${weekStart.getDate()}日 – ${weekEnd.getDate()}日`;
+    }
+    return `${weekStart.getMonth() + 1}月${weekStart.getDate()}日 – ${weekEnd.getMonth() + 1}月${weekEnd.getDate()}日`;
+  })();
+
   return (
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-xl font-bold text-on-surface">
-          {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
-          <span className="font-normal text-on-surface-variant ml-2">{WEEKDAYS[selectedDate.getDay()]}</span>
-        </h1>
-        <p className="text-sm text-on-surface-variant mt-0.5">
-          {isToday
-            ? consultationCount > 0 ? `今日共有 ${consultationCount} 场咨询预约` : "今日无咨询预约"
-            : consultationCount > 0 ? `${consultationCount} 场咨询预约` : "无咨询预约"}
-        </p>
+        {viewMode === "day" ? (
+          <>
+            <h1 className="text-xl font-bold text-on-surface">
+              {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月{selectedDate.getDate()}日
+              <span className="font-normal text-on-surface-variant ml-2">{WEEKDAYS[selectedDate.getDay()]}</span>
+            </h1>
+            <p className="text-sm text-on-surface-variant mt-0.5">
+              {isToday
+                ? consultationCount > 0 ? `今日共有 ${consultationCount} 场咨询预约` : "今日无咨询预约"
+                : consultationCount > 0 ? `${consultationCount} 场咨询预约` : "无咨询预约"}
+            </p>
+          </>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button onClick={() => onWeekChange?.(-7)} className="p-1.5 rounded-xl hover:bg-surface-container-low transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+            </button>
+            <h1 className="text-lg font-bold text-on-surface whitespace-nowrap">{weekLabel}</h1>
+            <button onClick={() => onWeekChange?.(7)} className="p-1.5 rounded-xl hover:bg-surface-container-low transition-colors">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="9 18 15 12 9 6" /></svg>
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
