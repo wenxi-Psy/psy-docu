@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useClients } from "@/hooks/useClients";
+import { useProfile } from "@/hooks/useProfile";
 import { ClientCard } from "@/components/client-card";
 import { ClientDetail } from "@/components/client-detail";
 import { AddClientModal } from "@/components/add-client-modal";
 
 export default function HomePage() {
   const { clients, loading, allTags, addClient, updateClient, addSession, updateSession, deleteTag } = useClients();
+  const { profile } = useProfile();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -65,7 +67,7 @@ export default function HomePage() {
 
       <div className="flex-1 overflow-y-auto p-8">
         {selectedClient ? (
-          <ClientDetail client={selectedClient} allTags={allTags}
+          <ClientDetail client={selectedClient} allTags={allTags} useSoap={profile?.useSoap ?? false}
             onAddSession={addSession} onUpdateSession={updateSession} onUpdateClient={updateClient} onDeleteTag={deleteTag} />
         ) : (
           <div className="flex flex-col items-center justify-center h-full text-on-surface-variant">

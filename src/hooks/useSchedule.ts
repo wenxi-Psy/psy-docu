@@ -26,6 +26,10 @@ export interface ScheduleItem {
   focus?: string;
   reflection?: string;
   tags?: string[];
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
   number?: number;
   totalSessions?: number;
   clientStartDate?: string;
@@ -89,6 +93,10 @@ export function useSchedule() {
         clientId: s.client_id as string, clientAlias: (client?.alias as string) ?? "未知",
         focus: (s.focus as string) ?? "", reflection: (s.reflection as string) ?? "",
         tags: (s.tags as string[]) ?? [],
+        subjective: (s.subjective as string) ?? undefined,
+        objective: (s.objective as string) ?? undefined,
+        assessment: (s.assessment as string) ?? undefined,
+        plan: (s.plan as string) ?? undefined,
         number: (s.number as number) ?? 1, totalSessions: sessionCounts.get(s.client_id as string) ?? 0,
         clientStartDate: (client?.start_date as string) ?? "",
         clientColor: (client?.color as string | null) ?? null,
@@ -201,7 +209,7 @@ export function useSchedule() {
 
   const completeConsultation = async (
     sessionId: string,
-    updates: { focus: string; note: string; reflection: string; tags: string[] }
+    updates: { focus: string; note: string; reflection: string; tags: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string }
   ): Promise<boolean> => {
     const { error } = await supabase.from("sessions").update({
       status: "completed",
@@ -209,6 +217,10 @@ export function useSchedule() {
       note: updates.note,
       reflection: updates.reflection,
       tags: updates.tags,
+      subjective: updates.subjective ?? null,
+      objective: updates.objective ?? null,
+      assessment: updates.assessment ?? null,
+      plan: updates.plan ?? null,
     }).eq("id", sessionId);
     if (error) return false;
     await fetchSchedule();

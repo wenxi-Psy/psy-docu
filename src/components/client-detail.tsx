@@ -23,13 +23,14 @@ const NEXT_STATUS: Record<string, { status: string; label: string }> = {
 interface ClientDetailProps {
   client: Client;
   allTags: string[];
+  useSoap?: boolean;
   onAddSession: (clientId: string, session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }, total: number) => Promise<boolean>;
   onUpdateSession: (sessionId: string, updates: Partial<Session> & { startTime?: string }) => Promise<boolean>;
   onUpdateClient: (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }) => Promise<boolean>;
   onDeleteTag?: (tag: string) => Promise<boolean>;
 }
 
-export function ClientDetail({ client, allTags, onAddSession, onUpdateSession, onUpdateClient, onDeleteTag }: ClientDetailProps) {
+export function ClientDetail({ client, allTags, useSoap = false, onAddSession, onUpdateSession, onUpdateClient, onDeleteTag }: ClientDetailProps) {
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [showAddSession, setShowAddSession] = useState(false);
   const [showEditClient, setShowEditClient] = useState(false);
@@ -83,7 +84,7 @@ export function ClientDetail({ client, allTags, onAddSession, onUpdateSession, o
         </div>
         {selectedSession && (
           <div className="w-80 flex-shrink-0">
-            <SessionDetail session={selectedSession} allTags={allTags} onUpdate={onUpdateSession} onDeleteTag={onDeleteTag} />
+            <SessionDetail session={selectedSession} allTags={allTags} useSoap={useSoap} onUpdate={onUpdateSession} onDeleteTag={onDeleteTag} />
           </div>
         )}
       </div>
