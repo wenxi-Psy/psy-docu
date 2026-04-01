@@ -40,11 +40,15 @@ function toSession(row: Record<string, unknown>): Session {
     startTime: row.start_time as string,
     number: row.number as number,
     duration: row.duration as number,
-    focus: row.focus as string,
+    focus: (row.focus as string) ?? "",
     note: (row.note as string) ?? "",
     reflection: (row.reflection as string) ?? "",
     tags: (row.tags as string[]) ?? [],
     status: (row.status as Session["status"]) ?? "completed",
+    subjective: (row.subjective as string) ?? undefined,
+    objective: (row.objective as string) ?? undefined,
+    assessment: (row.assessment as string) ?? undefined,
+    plan: (row.plan as string) ?? undefined,
   };
 }
 
@@ -150,7 +154,7 @@ export function useClients() {
 
   const addSession = async (
     clientId: string,
-    session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] },
+    session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string },
     currentTotal: number
   ): Promise<boolean> => {
     const userId = await getUserId();
@@ -164,6 +168,10 @@ export function useClients() {
       note: session.note,
       reflection: session.reflection,
       tags: session.tags,
+      subjective: session.subjective ?? null,
+      objective: session.objective ?? null,
+      assessment: session.assessment ?? null,
+      plan: session.plan ?? null,
       status: "completed",
       user_id: userId,
     });
@@ -173,7 +181,7 @@ export function useClients() {
   };
 
   const updateSession = async (sessionId: string, updates: {
-    date?: string; startTime?: string; duration?: number; focus?: string; note?: string; reflection?: string; tags?: string[];
+    date?: string; startTime?: string; duration?: number; focus?: string; note?: string; reflection?: string; tags?: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string;
   }): Promise<boolean> => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.date !== undefined) dbUpdates.date = updates.date;
@@ -183,6 +191,10 @@ export function useClients() {
     if (updates.note !== undefined) dbUpdates.note = updates.note;
     if (updates.reflection !== undefined) dbUpdates.reflection = updates.reflection;
     if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
+    if (updates.subjective !== undefined) dbUpdates.subjective = updates.subjective;
+    if (updates.objective !== undefined) dbUpdates.objective = updates.objective;
+    if (updates.assessment !== undefined) dbUpdates.assessment = updates.assessment;
+    if (updates.plan !== undefined) dbUpdates.plan = updates.plan;
 
     const { error } = await supabase.from("sessions").update(dbUpdates).eq("id", sessionId);
     if (error) return false;

@@ -14,6 +14,7 @@ import { CompleteSupervisionModal } from "./complete-supervision-modal";
 import { CancelModal } from "./cancel-modal";
 import { EditScheduleModal } from "./edit-schedule-modal";
 import { fmt } from "./utils";
+import { useProfile } from "@/hooks/useProfile";
 
 type ViewMode = "day" | "week";
 type ModalState =
@@ -27,6 +28,7 @@ type ModalState =
 export default function SchedulePage() {
   const { loading, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
   const { clients, allTags, addSession, refetch: refetchClients } = useClients();
+  const { profile } = useProfile();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export default function SchedulePage() {
     return ok;
   };
 
-  const handleCompleteConsultation = async (sessionId: string, updates: { focus: string; note: string; reflection: string; tags: string[] }) => {
+  const handleCompleteConsultation = async (sessionId: string, updates: { focus: string; note: string; reflection: string; tags: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string }) => {
     const ok = await completeConsultation(sessionId, updates);
     if (ok) await refetchClients(); // Sync client detail page data
     return ok;
@@ -200,6 +202,7 @@ export default function SchedulePage() {
         <CompleteConsultationModal
           item={modal.item}
           allTags={allTags}
+          useSoap={profile?.useSoap ?? false}
           onClose={closeModal}
           onSubmit={handleCompleteConsultation}
         />

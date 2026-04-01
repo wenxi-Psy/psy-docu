@@ -11,6 +11,11 @@ export interface Session {
   reflection: string;
   tags: string[];
   status: ScheduleStatus;
+  // SOAP fields (optional for backward compatibility)
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
 }
 
 export interface Client {
