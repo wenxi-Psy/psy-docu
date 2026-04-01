@@ -16,11 +16,12 @@ interface Props {
   onClose: () => void;
   onComplete: (item: ScheduleItem) => void;
   onCancel: (item: ScheduleItem) => void;
+  onEditSchedule: (item: ScheduleItem) => void;
   onEditRecord: (item: ScheduleItem) => void;
   onRevert: (item: ScheduleItem) => void;
 }
 
-export function DetailPanel({ item, onClose, onComplete, onCancel, onEditRecord, onRevert }: Props) {
+export function DetailPanel({ item, onClose, onComplete, onCancel, onEditSchedule, onEditRecord, onRevert }: Props) {
   if (!item) return null;
 
   const config = item.type === "consultation"
@@ -120,6 +121,10 @@ export function DetailPanel({ item, onClose, onComplete, onCancel, onEditRecord,
 
       {/* Action buttons */}
       <div className="space-y-2 pt-2">
+        <button onClick={() => onEditSchedule(item)}
+          className="w-full py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors">
+          编辑时间
+        </button>
         {item.status === "pending" && (
           <>
             <button onClick={() => onComplete(item)}

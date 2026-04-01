@@ -11,8 +11,13 @@ export default function HomePage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
 
-  const filteredClients = statusFilter === "all" ? clients : clients.filter((c) => c.status === statusFilter);
+  const filteredClients = clients.filter((c) => {
+    if (statusFilter !== "all" && c.status !== statusFilter) return false;
+    if (search && !c.alias.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
   const selectedClient = clients.find((c) => c.id === selectedId);
 
   if (loading) {
@@ -28,6 +33,19 @@ export default function HomePage() {
           <button onClick={() => setShowAddClient(true)} className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center hover:bg-primary-hover transition-colors" title="新建个案">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           </button>
+        </div>
+        <div className="px-4 pb-2">
+          <div className="relative mb-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="搜索来访者..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/50 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/30 transition-colors"
+            />
+          </div>
         </div>
         <div className="px-4 pb-2 flex gap-1">
           {[{ key: "all", label: "全部" }, { key: "active", label: "在谈" }, { key: "paused", label: "暂停" }, { key: "ended", label: "已结束" }].map((f) => (

@@ -118,6 +118,65 @@ export function useSchedule() {
 
   const datesWithItems = useMemo(() => new Set(items.map((i) => i.date)), [items]);
 
+  /** Check if a time slot conflicts with existing items. Returns conflicting items. */
+  const checkConflict = useCallback(
+    (date: string, startTime: string, duration: number, excludeId?: string): ScheduleItem[] => {
+      const toMin = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      const newStart = toMin(startTime);
+      const newEnd = newStart + duration;
+      return items.filter((i) => {
+        if (i.id === excludeId) return false;
+        if (i.date !== date) return false;
+        if (i.status === "cancelled") return false;
+        const iStart = toMin(i.startTime);
+        const iEnd = iStart + i.duration;
+        return newStart < iEnd && newEnd > iStart;
+      });
+    },
+    [items]
+  );
+
+  /** Update time/date for a consultation (session) */
+  const updateSessionSchedule = async (
+    sessionId: string,
+    updates: { date?: string; startTime?: string; duration?: number }
+  ): Promise<boolean> => {
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.date !== undefined) dbUpdates.date = updates.date;
+    if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
+    if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
+    const { error } = await supabase.from("sessions").update(dbUpdates).eq("id", sessionId);
+    if (error) return false;
+    await fetchSchedule();
+    return true;
+  };
+
+  /** Update time/date/title for an event (supervision/other) */
+  const updateEventSchedule = async (
+    eventId: string,
+    updates: { date?: string; startTime?: string; duration?: number; title?: string; clientIds?: string[] }
+  ): Promise<boolean> => {
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.date !== undefined) dbUpdates.date = updates.date;
+    if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
+    if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
+    if (updates.title !== undefined) dbUpdates.title = updates.title;
+    const { error } = await supabase.from("events").update(dbUpdates).eq("id", eventId);
+    if (error) return false;
+
+    // Update related clients if provided
+    if (updates.clientIds !== undefined) {
+      await supabase.from("event_clients").delete().eq("event_id", eventId);
+      if (updates.clientIds.length > 0) {
+        const links = updates.clientIds.map((cid) => ({ event_id: eventId, client_id: cid }));
+        await supabase.from("event_clients").insert(links);
+      }
+    }
+
+    await fetchSchedule();
+    return true;
+  };
+
   const addEvent = async (event: {
     type: EventType; title: string; date: string; startTime: string; duration: number; note: string; clientIds?: string[];
   }): Promise<boolean> => {
@@ -187,5 +246,5 @@ export function useSchedule() {
     return true;
   };
 
-  return { items, loading, getItemsForDate, datesWithItems, addEvent, completeConsultation, completeEvent, cancelItem, revertToPending, refetch: fetchSchedule };
+  return { items, loading, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch: fetchSchedule };
 }

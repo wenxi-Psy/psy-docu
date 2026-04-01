@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { EventType } from "@/hooks/useSchedule";
+import { EventType, ScheduleItem } from "@/hooks/useSchedule";
 
 interface Client { id: string; alias: string; }
 
@@ -12,11 +12,12 @@ interface AddEventModalProps {
   onSubmitEvent: (event: { type: EventType; title: string; date: string; startTime: string; duration: number; note: string; clientIds?: string[] }) => Promise<boolean>;
   onSubmitConsultation: (clientId: string, session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }, currentTotal: number) => Promise<boolean>;
   getClientTotal: (clientId: string) => number;
+  checkConflict?: (date: string, startTime: string, duration: number, excludeId?: string) => ScheduleItem[];
 }
 
 type Step = "choose" | "consultation" | "supervision" | "other";
 
-export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, onSubmitConsultation, getClientTotal }: AddEventModalProps) {
+export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, onSubmitConsultation, getClientTotal, checkConflict }: AddEventModalProps) {
   const today = initialDate ?? new Date().toISOString().split("T")[0];
   const [step, setStep] = useState<Step>("choose");
   const [date, setDate] = useState(today);
@@ -29,8 +30,10 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
   const [selectedClientIds, setSelectedClientIds] = useState<string[]>([]);
   const [otherTitle, setOtherTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+  const [confirmedConflict, setConfirmedConflict] = useState(false);
 
-  const handleSubmit = async () => {
+  const doSubmit = async () => {
     setSubmitting(true);
     let ok = false;
     try {
@@ -43,6 +46,18 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
       }
       if (ok) onClose();
     } finally { setSubmitting(false); }
+  };
+
+  const handleSubmit = async () => {
+    if (!confirmedConflict && checkConflict) {
+      const conflicts = checkConflict(date, startTime, duration);
+      if (conflicts.length > 0) {
+        const names = conflicts.map((c) => `「${c.type === "consultation" ? c.clientAlias : c.title} ${c.startTime}」`).join("、");
+        setConflictWarning(`该时段与 ${names} 冲突`);
+        return;
+      }
+    }
+    await doSubmit();
   };
 
   const toggleClient = (id: string) => setSelectedClientIds((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
@@ -128,7 +143,16 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
             </div>
           )}
 
-          {step !== "choose" && (
+          {step !== "choose" && conflictWarning && (
+            <div className="bg-amber-bg rounded-xl p-3 mt-4 space-y-2">
+              <p className="text-sm text-amber">{conflictWarning}</p>
+              <div className="flex gap-2">
+                <button onClick={() => setConflictWarning(null)} className="flex-1 py-2 rounded-lg border border-outline-variant text-xs text-on-surface-variant">返回修改</button>
+                <button onClick={() => { setConfirmedConflict(true); setConflictWarning(null); doSubmit(); }} className="flex-1 py-2 rounded-lg bg-amber text-white text-xs font-medium">仍然保存</button>
+              </div>
+            </div>
+          )}
+          {step !== "choose" && !conflictWarning && (
             <div className="flex gap-3 mt-6">
               <button onClick={() => setStep("choose")} className="flex-1 py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant">返回</button>
               <button onClick={handleSubmit} disabled={submitting || (step === "consultation" && !selectedClientId)} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-40">
