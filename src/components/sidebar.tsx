@@ -18,7 +18,7 @@ export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside className={`flex flex-col h-full bg-surface-container-low rounded-r-[32px] transition-all duration-200 ${collapsed ? "w-16" : "w-64"}`}>
+    <aside className={`flex flex-col h-full bg-surface-container-low rounded-r-[32px] transition-all duration-200 ${collapsed ? "w-16" : "w-60"}`}>
       {/* Logo */}
       <div className="px-6 pt-8 pb-6 flex items-center gap-3">
         <span className="text-2xl">🌿</span>
@@ -36,16 +36,16 @@ export function Sidebar() {
           const active = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}
-              className={`flex items-center gap-4 px-4 py-3 rounded-2xl text-sm transition-all duration-150 ${
+              className={`relative flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm transition-all duration-150 ${
                 active
-                  ? "bg-primary-container/50 text-primary font-semibold"
-                  : "text-on-surface-variant hover:bg-surface-container-lowest/60 hover:text-on-surface"
+                  ? "bg-primary-container/50 text-primary font-medium"
+                  : "text-on-surface-variant hover:bg-surface-container-lowest/70 hover:text-on-surface"
               }`}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary" />}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d={item.icon} />
               </svg>
               {!collapsed && <span className="tracking-tight">{item.label}</span>}
-              {active && !collapsed && <div className="ml-auto w-1 h-5 rounded-full bg-primary" />}
             </Link>
           );
         })}
