@@ -8,7 +8,7 @@ import { ClientDetail } from "@/components/client-detail";
 import { AddClientModal } from "@/components/add-client-modal";
 
 export default function HomePage() {
-  const { clients, loading, allTags, addClient, updateClient, addSession, updateSession, deleteTag } = useClients();
+  const { clients, loading, error, allTags, addClient, updateClient, addSession, updateSession, deleteTag, refetch } = useClients();
   const { profile } = useProfile();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
@@ -22,9 +22,8 @@ export default function HomePage() {
   });
   const selectedClient = clients.find((c) => c.id === selectedId);
 
-  if (loading) {
-    return <div className="flex items-center justify-center h-full"><div className="text-on-surface-variant text-sm">加载中...</div></div>;
-  }
+  if (loading) return <div className="flex items-center justify-center h-full"><div className="text-on-surface-variant text-sm">加载中...</div></div>;
+  if (error) return <div className="flex flex-col items-center justify-center h-full gap-3"><div className="text-sm text-on-surface-variant">{error}</div><button onClick={refetch} className="text-sm text-primary hover:text-primary-hover transition-colors">重试</button></div>;
 
   return (
     <div className="flex h-full">

@@ -26,7 +26,7 @@ type ModalState =
   | { type: "cancel"; item: ScheduleItem };
 
 export default function SchedulePage() {
-  const { loading, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
+  const { loading, error, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
   const { clients, allTags, addSession, refetch: refetchClients } = useClients();
   const { profile } = useProfile();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -122,13 +122,8 @@ export default function SchedulePage() {
 
   const closeModal = () => setModal({ type: "none" });
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-on-surface-variant text-sm">加载中...</div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex items-center justify-center h-full"><div className="text-on-surface-variant text-sm">加载中...</div></div>;
+  if (error) return <div className="flex flex-col items-center justify-center h-full gap-3"><div className="text-sm text-on-surface-variant">{error}</div><button onClick={refetch} className="text-sm text-primary hover:text-primary-hover transition-colors">重试</button></div>;
 
   return (
     <div className="flex flex-col h-full">

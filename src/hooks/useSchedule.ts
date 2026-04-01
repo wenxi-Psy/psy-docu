@@ -40,6 +40,7 @@ export interface ScheduleItem {
 export function useSchedule() {
   const [items, setItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchSchedule = useCallback(async () => {
     const [sessRes, evtRes, clientRes, ecRes] = await Promise.all([
@@ -51,9 +52,11 @@ export function useSchedule() {
 
     if (sessRes.error || evtRes.error || clientRes.error || ecRes.error) {
       console.error("fetchSchedule error:", sessRes.error, evtRes.error, clientRes.error, ecRes.error);
+      setError("数据加载失败，请检查网络后重试");
       setLoading(false);
       return;
     }
+    setError(null);
 
     const sessionRows = sessRes.data ?? [];
     const eventRows = evtRes.data ?? [];
@@ -258,5 +261,5 @@ export function useSchedule() {
     return true;
   };
 
-  return { items, loading, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch: fetchSchedule };
+  return { items, loading, error, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch: fetchSchedule };
 }

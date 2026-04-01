@@ -55,6 +55,7 @@ function toSession(row: Record<string, unknown>): Session {
 export function useClients() {
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
 
   const fetchClients = useCallback(async () => {
@@ -67,9 +68,11 @@ export function useClients() {
 
     if (clientRes.error || sessionRes.error || ecRes.error || evtRes.error) {
       console.error("fetchClients error:", clientRes.error, sessionRes.error, ecRes.error, evtRes.error);
+      setError("数据加载失败，请检查网络后重试");
       setLoading(false);
       return;
     }
+    setError(null);
 
     const clientRows = clientRes.data ?? [];
     const sessionRows = sessionRes.data ?? [];
@@ -213,5 +216,5 @@ export function useClients() {
     return true;
   };
 
-  return { clients, loading, allTags, addClient, updateClient, addSession, updateSession, deleteTag, refetch: fetchClients };
+  return { clients, loading, error, allTags, addClient, updateClient, addSession, updateSession, deleteTag, refetch: fetchClients };
 }

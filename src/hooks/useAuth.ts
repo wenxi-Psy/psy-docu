@@ -11,9 +11,10 @@ export function useAuth() {
   useEffect(() => {
     let cancelled = false;
 
-    supabase.auth.getUser().then(({ data }) => {
+    // Use getSession() (reads local storage, instant) instead of getUser() (network request, can fail)
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!cancelled) {
-        setUser(data.user);
+        setUser(session?.user ?? null);
         setLoading(false);
       }
     }).catch(() => {
