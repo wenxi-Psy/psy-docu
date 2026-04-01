@@ -91,13 +91,14 @@ function StatusBar({ active, paused, ended }: { active: number; paused: number; 
 }
 
 export default function StatsPage() {
-  const { stats, loading } = useStatistics();
+  const { stats, loading, error, refetch } = useStatistics();
   const [monthIndex, setMonthIndex] = useState<number | null>(null);
 
   const currentIndex = monthIndex ?? (stats ? stats.availableMonths.length - 1 : 0);
   const selectedMonth = stats?.availableMonths[currentIndex];
 
   if (loading) return <div className="flex items-center justify-center h-full"><div className="text-on-surface-variant text-sm">加载中...</div></div>;
+  if (error) return <div className="flex flex-col items-center justify-center h-full gap-3"><div className="text-sm text-on-surface-variant">{error}</div><button onClick={refetch} className="text-sm text-primary hover:text-primary-hover transition-colors">重试</button></div>;
   if (!stats) return <div className="flex items-center justify-center h-full"><div className="text-on-surface-variant text-sm">数据加载失败</div></div>;
 
   return (

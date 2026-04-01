@@ -22,6 +22,7 @@ export interface Statistics {
 export function useStatistics() {
   const [stats, setStats] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchStats = useCallback(async () => {
       const now = new Date();
@@ -33,6 +34,7 @@ export function useStatistics() {
 
       if (sessRes.error || evtRes.error || clientRes.error) {
         console.error("fetchStats error:", sessRes.error, evtRes.error, clientRes.error);
+        setError("数据加载失败，请检查网络后重试");
         setLoading(false);
         return;
       }
@@ -73,6 +75,7 @@ export function useStatistics() {
         });
       }
 
+      setError(null);
       setStats({ totalSessions, totalMinutes, activeClients, pausedClients, endedClients, monthlyTrend, availableMonths });
       setLoading(false);
   }, []);
@@ -81,5 +84,5 @@ export function useStatistics() {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, loading, refetch: fetchStats };
+  return { stats, loading, error, refetch: fetchStats };
 }
