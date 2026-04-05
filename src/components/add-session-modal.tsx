@@ -7,7 +7,7 @@ interface AddSessionModalProps {
   clientAlias: string;
   allTags: string[];
   onClose: () => void;
-  onSubmit: (session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }) => Promise<boolean>;
+  onSubmit: (session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[]; status: "completed" | "pending" }) => Promise<boolean>;
   onDeleteTag?: (tag: string) => Promise<boolean>;
 }
 
@@ -15,6 +15,7 @@ const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-
 
 export function AddSessionModal({ clientAlias, allTags, onClose, onSubmit, onDeleteTag }: AddSessionModalProps) {
   const today = new Date().toISOString().split("T")[0];
+  const [status, setStatus] = useState<"completed" | "pending">("completed");
   const [date, setDate] = useState(today);
   const [startTime, setStartTime] = useState("10:00");
   const [duration, setDuration] = useState(50);
@@ -27,7 +28,7 @@ export function AddSessionModal({ clientAlias, allTags, onClose, onSubmit, onDel
 
   const handleSubmit = async () => {
     setSubmitting(true);
-    const ok = await onSubmit({ date, startTime, duration, focus, note, reflection, tags });
+    const ok = await onSubmit({ date, startTime, duration, focus, note, reflection, tags, status });
     setSubmitting(false);
     if (ok) onClose();
   };
@@ -40,16 +41,32 @@ export function AddSessionModal({ clientAlias, allTags, onClose, onSubmit, onDel
           <button onClick={onClose} className="p-1.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors">✕</button>
         </div>
         <div className="px-6 pb-6 space-y-4">
+          {/* Status toggle */}
+          <div className="flex bg-surface-container-low rounded-2xl p-1">
+            {([["completed", "补录已完成"], ["pending", "新建预约"]] as const).map(([val, label]) => (
+              <button key={val} onClick={() => setStatus(val)}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${status === val ? "bg-white shadow-sm text-on-surface" : "text-on-surface-variant hover:text-on-surface"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></div>
             <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} /></div>
           </div>
           <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={inputClass} /></div>
           <div><label className="text-xs text-on-surface-variant block mb-1">焦点</label><input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="本次咨询焦点" className={inputClass} /></div>
-          <div><label className="text-xs text-on-surface-variant block mb-1">笔记</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="咨询笔记" className={inputClass + " resize-none"} /></div>
-          <div><label className="text-xs text-on-surface-variant block mb-1">反思</label><textarea value={reflection} onChange={(e) => setReflection(e.target.value)} rows={2} placeholder="咨询后反思" className={inputClass + " resize-none"} /></div>
-          <div><label className="text-xs text-on-surface-variant block mb-1">标签</label><TagInput tags={tags} allTags={allTags} onChange={setTags} onDeleteTag={onDeleteTag} /></div>
-          <button onClick={handleSubmit} disabled={submitting} className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 transition-colors shadow-ambient">{submitting ? "保存中..." : "提交并存档"}</button>
+          {status === "completed" && (
+            <>
+              <div><label className="text-xs text-on-surface-variant block mb-1">笔记</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="咨询笔记" className={inputClass + " resize-none"} /></div>
+              <div><label className="text-xs text-on-surface-variant block mb-1">反思</label><textarea value={reflection} onChange={(e) => setReflection(e.target.value)} rows={2} placeholder="咨询后反思" className={inputClass + " resize-none"} /></div>
+              <div><label className="text-xs text-on-surface-variant block mb-1">标签</label><TagInput tags={tags} allTags={allTags} onChange={setTags} onDeleteTag={onDeleteTag} /></div>
+            </>
+          )}
+          <button onClick={handleSubmit} disabled={submitting} className="w-full py-3 rounded-full bg-primary text-white text-sm font-semibold hover:bg-primary-hover disabled:opacity-40 transition-colors shadow-ambient">
+            {submitting ? "保存中..." : status === "completed" ? "提交并存档" : "创建预约"}
+          </button>
         </div>
       </div>
     </div>

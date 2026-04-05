@@ -157,7 +157,7 @@ export function useClients() {
 
   const addSession = async (
     clientId: string,
-    session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string },
+    session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[]; status?: "completed" | "pending"; subjective?: string; objective?: string; assessment?: string; plan?: string },
     currentTotal: number
   ): Promise<boolean> => {
     const userId = await getUserId();
@@ -175,7 +175,7 @@ export function useClients() {
       objective: session.objective ?? null,
       assessment: session.assessment ?? null,
       plan: session.plan ?? null,
-      status: "completed",
+      status: session.status ?? "completed",
       user_id: userId,
     });
     if (error) return false;
