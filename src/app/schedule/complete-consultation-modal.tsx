@@ -112,9 +112,20 @@ export function CompleteConsultationModal({ item, allTags, useSoap = false, onCl
           <div className="flex gap-3 mt-6">
             <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant">取消</button>
             <button onClick={handleSubmit} disabled={submitting} className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-40 transition-colors">
-              {submitting ? "保存中..." : "完成并保存"}
+              {submitting ? "保存中..." : "保存记录"}
             </button>
           </div>
+          <button
+            onClick={async () => {
+              setSubmitting(true);
+              await onSubmit(item.id, { focus: "", note: "", reflection: "", tags: [] });
+              setSubmitting(false);
+              onClose();
+            }}
+            disabled={submitting}
+            className="w-full py-2 text-xs text-on-surface-variant hover:text-on-surface transition-colors text-center">
+            仅标记完成，稍后补填记录
+          </button>
         </div>
       </div>
     </div>
