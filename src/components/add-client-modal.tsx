@@ -5,7 +5,7 @@ import { ColorPicker } from "./color-picker";
 
 interface AddClientModalProps {
   onClose: () => void;
-  onSubmit: (client: { alias: string; notes: string; color?: string }) => Promise<boolean>;
+  onSubmit: (client: { alias: string; notes: string; color?: string }) => Promise<string | null>;
 }
 
 const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/30 transition-colors";

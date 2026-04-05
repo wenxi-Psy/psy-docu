@@ -25,7 +25,7 @@ type ModalState =
   | { type: "cancel"; item: ScheduleItem };
 
 export default function SchedulePage() {
-  const { loading, error, clients, allTags, addSession, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
+  const { loading, error, clients, allTags, addClient, addSession, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
   const { profile } = useProfile();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
@@ -177,13 +177,14 @@ export default function SchedulePage() {
       {/* Modals */}
       {modal.type === "add" && (
         <AddEventModal
-          clients={clients.map((c) => ({ id: c.id, alias: c.alias }))}
+          clients={clients.map((c) => ({ id: c.id, alias: c.alias, status: c.status }))}
           initialDate={dateStr}
           onClose={() => { closeModal(); refetch(); }}
           onSubmitEvent={addEvent}
           onSubmitConsultation={addSession}
           getClientTotal={(id) => clients.find((c) => c.id === id)?.totalSessions ?? 0}
           checkConflict={checkConflict}
+          onAddClient={(alias, notes) => addClient({ alias, notes: notes ?? "" })}
         />
       )}
       {modal.type === "complete-consultation" && (

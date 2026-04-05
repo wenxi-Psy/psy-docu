@@ -10,7 +10,7 @@ export type { EventType, ScheduleItem } from "@/types";
 export function useSchedule() {
   const {
     clients, allTags, scheduleItems, loading, error,
-    addSession, addEvent,
+    addClient, addSession, addEvent,
     updateSessionSchedule, updateEventSchedule,
     completeConsultation, completeEvent,
     cancelItem, revertToPending,
@@ -56,6 +56,7 @@ export function useSchedule() {
     error,
     clients,      // exposed so schedule page doesn't need useClients
     allTags,      // exposed for CompleteConsultationModal
+    addClient,    // exposed for AddEventModal inline client creation
     addSession,   // exposed for AddEventModal consultation creation
     getItemsForDate,
     datesWithItems,
