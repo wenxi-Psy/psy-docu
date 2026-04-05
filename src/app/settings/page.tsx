@@ -12,7 +12,7 @@ const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-
 
 export default function SettingsPage() {
   const { profile, loading, updateProfile } = useProfile();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [defaultDuration, setDefaultDuration] = useState(50);
@@ -122,6 +122,14 @@ export default function SettingsPage() {
           className="w-full py-3 rounded-2xl bg-primary text-white text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-40"
         >
           {saving ? "保存中..." : saved ? "已保存 ✓" : "保存设置"}
+        </button>
+
+        {/* Sign out */}
+        <button
+          onClick={signOut}
+          className="w-full py-3 rounded-2xl border border-outline-variant text-sm text-on-surface-variant hover:bg-error-container-bg hover:text-error-container hover:border-error-container/30 transition-colors"
+        >
+          退出登录
         </button>
     </div>
   );
