@@ -2,7 +2,7 @@
 
 import {
   createContext, useContext, useState, useCallback,
-  useEffect, useMemo, ReactNode,
+  useEffect, useMemo, useRef, ReactNode,
 } from "react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -224,6 +224,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Cache userId to avoid repeated getUser() network calls in mutations
+  const userIdRef = useRef<string | null>(null);
+
   // Derived state — recomputed only when raw rows change
   const clients = useMemo(
     () => buildClients(clientRows, sessionRows, ecRows, evtRows),
@@ -240,10 +243,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const fetchAll = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) {
+      userIdRef.current = null;
       setLoading(false);
       return;
     }
     const userId = session.user.id;
+    userIdRef.current = userId;
 
     const [clientRes, sessionRes, evtRes, ecRes, profileRes] = await Promise.all([
       supabase.from("clients").select("*").order("created_at"),
@@ -275,6 +280,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") {
+        userIdRef.current = null;
         setClientRows([]);
         setSessionRows([]);
         setEvtRows([]);
@@ -292,17 +298,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   // ─── Mutations ───────────────────────────────────────────────────────────
 
+  // ─── Optimistic state helpers ─────────────────────────────────────────────
+  const patchSession = (id: string, row: Record<string, unknown>) =>
+    setSessionRows((prev) => prev.map((r) => r.id === id ? row : r));
+  const patchEvent = (id: string, row: Record<string, unknown>) =>
+    setEvtRows((prev) => prev.map((r) => r.id === id ? row : r));
+
   const addClient = async (client: { alias: string; notes: string; color?: string }): Promise<string | null> => {
-    const userId = await getUserId();
+    const userId = userIdRef.current;
+    if (!userId) return null;
     const row: Record<string, unknown> = {
       alias: client.alias, notes: client.notes,
       status: "active", start_date: new Date().toISOString().split("T")[0], user_id: userId,
     };
     if (client.color) row.color = client.color;
-    const { data, error } = await supabase.from("clients").insert(row).select("id").single();
+    const { data, error } = await supabase.from("clients").insert(row).select("*").single();
     if (error || !data) return null;
-    await fetchAll();
-    return data.id as string;
+    setClientRows((prev) => [...prev, data as Record<string, unknown>]);
+    return (data as Record<string, unknown>).id as string;
   };
 
   const updateClient = async (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }): Promise<boolean> => {
@@ -311,9 +324,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.color !== undefined) dbUpdates.color = updates.color;
-    const { error } = await supabase.from("clients").update(dbUpdates).eq("id", id);
-    if (error) return false;
-    await fetchAll();
+    const { data, error } = await supabase.from("clients").update(dbUpdates).eq("id", id).select("*").single();
+    if (error || !data) return false;
+    setClientRows((prev) => prev.map((r) => r.id === id ? data as Record<string, unknown> : r));
     return true;
   };
 
@@ -322,17 +335,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[]; status?: "completed" | "pending"; subjective?: string; objective?: string; assessment?: string; plan?: string },
     currentTotal: number
   ): Promise<boolean> => {
-    const userId = await getUserId();
-    const { error } = await supabase.from("sessions").insert({
+    const userId = userIdRef.current;
+    const { data, error } = await supabase.from("sessions").insert({
       client_id: clientId, date: session.date, start_time: session.startTime,
       duration: session.duration, number: currentTotal + 1,
       focus: session.focus, note: session.note, reflection: session.reflection, tags: session.tags,
       subjective: session.subjective ?? null, objective: session.objective ?? null,
       assessment: session.assessment ?? null, plan: session.plan ?? null,
       status: session.status ?? "completed", user_id: userId,
-    });
-    if (error) return false;
-    await fetchAll();
+    }).select("*").single();
+    if (error || !data) return false;
+    setSessionRows((prev) => [data as Record<string, unknown>, ...prev]);
     return true;
   };
 
@@ -349,38 +362,43 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (updates.objective !== undefined) dbUpdates.objective = updates.objective;
     if (updates.assessment !== undefined) dbUpdates.assessment = updates.assessment;
     if (updates.plan !== undefined) dbUpdates.plan = updates.plan;
-    const { error } = await supabase.from("sessions").update(dbUpdates).eq("id", sessionId);
-    if (error) return false;
-    await fetchAll();
+    const { data, error } = await supabase.from("sessions").update(dbUpdates).eq("id", sessionId).select("*").single();
+    if (error || !data) return false;
+    patchSession(sessionId, data as Record<string, unknown>);
     return true;
   };
 
   const deleteTag = async (tag: string): Promise<boolean> => {
     const { data: rows } = await supabase.from("sessions").select("id, tags").contains("tags", [tag]);
     if (!rows) return false;
-    for (const row of rows) {
+    await Promise.all(rows.map((row) => {
       const newTags = ((row.tags as string[]) ?? []).filter((t) => t !== tag);
-      await supabase.from("sessions").update({ tags: newTags }).eq("id", row.id);
-    }
-    await fetchAll();
+      return supabase.from("sessions").update({ tags: newTags }).eq("id", row.id);
+    }));
+    setSessionRows((prev) => prev.map((r) => {
+      const tags = (r.tags as string[]) ?? [];
+      return tags.includes(tag) ? { ...r, tags: tags.filter((t) => t !== tag) } : r;
+    }));
     return true;
   };
 
   const addEvent = async (event: { type: EventType; title: string; date: string; startTime: string; duration: number; note: string; clientIds?: string[] }): Promise<boolean> => {
-    const userId = await getUserId();
+    const userId = userIdRef.current;
     if (!userId) return false;
     const { data, error } = await supabase.from("events").insert({
       type: event.type, title: event.title, date: event.date,
       start_time: event.startTime, duration: event.duration, note: event.note,
       user_id: userId, status: "pending",
-    }).select("id").single();
+    }).select("*").single();
     if (error || !data) return false;
+    const eventId = (data as Record<string, unknown>).id as string;
+    setEvtRows((prev) => [...prev, data as Record<string, unknown>]);
     if (event.clientIds && event.clientIds.length > 0) {
-      await supabase.from("event_clients").insert(
-        event.clientIds.map((cid) => ({ event_id: data.id, client_id: cid }))
-      );
+      const { data: ecData } = await supabase.from("event_clients")
+        .insert(event.clientIds.map((cid) => ({ event_id: eventId, client_id: cid })))
+        .select("*");
+      if (ecData) setEcRows((prev) => [...prev, ...(ecData as Record<string, unknown>[])]);
     }
-    await fetchAll();
     return true;
   };
 
@@ -389,9 +407,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (updates.date !== undefined) dbUpdates.date = updates.date;
     if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
     if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
-    const { error } = await supabase.from("sessions").update(dbUpdates).eq("id", sessionId);
-    if (error) return false;
-    await fetchAll();
+    const { data, error } = await supabase.from("sessions").update(dbUpdates).eq("id", sessionId).select("*").single();
+    if (error || !data) return false;
+    patchSession(sessionId, data as Record<string, unknown>);
     return true;
   };
 
@@ -401,54 +419,66 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime;
     if (updates.duration !== undefined) dbUpdates.duration = updates.duration;
     if (updates.title !== undefined) dbUpdates.title = updates.title;
-    const { error } = await supabase.from("events").update(dbUpdates).eq("id", eventId);
-    if (error) return false;
+    const { data, error } = await supabase.from("events").update(dbUpdates).eq("id", eventId).select("*").single();
+    if (error || !data) return false;
+    patchEvent(eventId, data as Record<string, unknown>);
     if (updates.clientIds !== undefined) {
       await supabase.from("event_clients").delete().eq("event_id", eventId);
+      setEcRows((prev) => prev.filter((r) => r.event_id !== eventId));
       if (updates.clientIds.length > 0) {
-        await supabase.from("event_clients").insert(
-          updates.clientIds.map((cid) => ({ event_id: eventId, client_id: cid }))
-        );
+        const { data: ecData } = await supabase.from("event_clients")
+          .insert(updates.clientIds.map((cid) => ({ event_id: eventId, client_id: cid })))
+          .select("*");
+        if (ecData) setEcRows((prev) => [...prev, ...(ecData as Record<string, unknown>[])]);
       }
     }
-    await fetchAll();
     return true;
   };
 
   const completeConsultation = async (sessionId: string, updates: { focus: string; note: string; reflection: string; tags: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string }): Promise<boolean> => {
-    const { error } = await supabase.from("sessions").update({
+    const { data, error } = await supabase.from("sessions").update({
       status: "completed",
       focus: updates.focus, note: updates.note, reflection: updates.reflection, tags: updates.tags,
       subjective: updates.subjective ?? null, objective: updates.objective ?? null,
       assessment: updates.assessment ?? null, plan: updates.plan ?? null,
-    }).eq("id", sessionId);
-    if (error) return false;
-    await fetchAll();
+    }).eq("id", sessionId).select("*").single();
+    if (error || !data) return false;
+    patchSession(sessionId, data as Record<string, unknown>);
     return true;
   };
 
   const completeEvent = async (eventId: string, note?: string): Promise<boolean> => {
     const upd: Record<string, unknown> = { status: "completed" };
     if (note !== undefined) upd.note = note;
-    const { error } = await supabase.from("events").update(upd).eq("id", eventId);
-    if (error) return false;
-    await fetchAll();
+    const { data, error } = await supabase.from("events").update(upd).eq("id", eventId).select("*").single();
+    if (error || !data) return false;
+    patchEvent(eventId, data as Record<string, unknown>);
     return true;
   };
 
   const cancelItem = async (item: ScheduleItem, cancelReason: string): Promise<boolean> => {
-    const table = item.type === "consultation" ? "sessions" : "events";
-    const { error } = await supabase.from(table).update({ status: "cancelled", cancel_reason: cancelReason }).eq("id", item.id);
-    if (error) return false;
-    await fetchAll();
+    if (item.type === "consultation") {
+      const { data, error } = await supabase.from("sessions").update({ status: "cancelled", cancel_reason: cancelReason }).eq("id", item.id).select("*").single();
+      if (error || !data) return false;
+      patchSession(item.id, data as Record<string, unknown>);
+    } else {
+      const { data, error } = await supabase.from("events").update({ status: "cancelled", cancel_reason: cancelReason }).eq("id", item.id).select("*").single();
+      if (error || !data) return false;
+      patchEvent(item.id, data as Record<string, unknown>);
+    }
     return true;
   };
 
   const revertToPending = async (item: ScheduleItem): Promise<boolean> => {
-    const table = item.type === "consultation" ? "sessions" : "events";
-    const { error } = await supabase.from(table).update({ status: "pending", cancel_reason: null }).eq("id", item.id);
-    if (error) return false;
-    await fetchAll();
+    if (item.type === "consultation") {
+      const { data, error } = await supabase.from("sessions").update({ status: "pending", cancel_reason: null }).eq("id", item.id).select("*").single();
+      if (error || !data) return false;
+      patchSession(item.id, data as Record<string, unknown>);
+    } else {
+      const { data, error } = await supabase.from("events").update({ status: "pending", cancel_reason: null }).eq("id", item.id).select("*").single();
+      if (error || !data) return false;
+      patchEvent(item.id, data as Record<string, unknown>);
+    }
     return true;
   };
 

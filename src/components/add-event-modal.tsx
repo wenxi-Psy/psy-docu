@@ -216,15 +216,28 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
                 <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => updateTimeField(setStartTime)(e.target.value)} className={inputClass} /></div>
               </div>
               <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => updateTimeField(setDuration)(Number(e.target.value))} className={inputClass} /></div>
-              <div><label className="text-xs text-on-surface-variant block mb-1">关联个案（可选，可多选）</label>
+              <div>
+                <label className="text-xs text-on-surface-variant block mb-1">关联个案（可选，可多选）</label>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {clients.map((c) => (
+                  {activeClients.map((c) => (
                     <button key={c.id} onClick={() => toggleClient(c.id)}
                       className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${selectedClientIds.includes(c.id) ? "bg-primary text-white border-primary" : "border-outline-variant text-on-surface-variant hover:border-primary/30"}`}>
                       {c.alias}
                     </button>
                   ))}
+                  {showInactiveClients && inactiveClients.map((c) => (
+                    <button key={c.id} onClick={() => toggleClient(c.id)}
+                      className={`text-xs px-3 py-1.5 rounded-full border transition-colors ${selectedClientIds.includes(c.id) ? "bg-primary text-white border-primary" : "border-outline-variant text-on-surface-variant/60 hover:border-primary/30"}`}>
+                      {c.alias}（{c.status === "paused" ? "暂停" : "已结束"}）
+                    </button>
+                  ))}
                 </div>
+                {inactiveClients.length > 0 && (
+                  <button type="button" onClick={() => setShowInactiveClients(!showInactiveClients)}
+                    className="text-xs text-on-surface-variant hover:text-on-surface transition-colors mt-1.5">
+                    {showInactiveClients ? "▲ 隐藏暂停/结案" : `▼ 显示暂停/结案来访（${inactiveClients.length} 位）`}
+                  </button>
+                )}
               </div>
               <div><label className="text-xs text-on-surface-variant block mb-1">备注</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="督导内容记录" className={inputClass + " resize-none"} /></div>
             </div>
