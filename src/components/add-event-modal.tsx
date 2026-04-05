@@ -62,6 +62,13 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
 
   const toggleClient = (id: string) => setSelectedClientIds((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
 
+  // Reset conflict state when time fields change
+  const updateTimeField = <T,>(setter: (v: T) => void) => (v: T) => {
+    setter(v);
+    setConflictWarning(null);
+    setConfirmedConflict(false);
+  };
+
   const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-colors";
 
   return (
@@ -100,10 +107,10 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></div>
-                <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} /></div>
+                <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => updateTimeField(setDate)(e.target.value)} className={inputClass} /></div>
+                <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => updateTimeField(setStartTime)(e.target.value)} className={inputClass} /></div>
               </div>
-              <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={inputClass} /></div>
+              <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => updateTimeField(setDuration)(Number(e.target.value))} className={inputClass} /></div>
               <div><label className="text-xs text-on-surface-variant block mb-1">焦点</label><input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="本次咨询焦点" className={inputClass} /></div>
               <div><label className="text-xs text-on-surface-variant block mb-1">备注</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="可选" className={inputClass + " resize-none"} /></div>
             </div>
@@ -113,10 +120,10 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
             <div className="space-y-4">
               <div><label className="text-xs text-on-surface-variant block mb-1">督导标题</label><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="如：个案督导、团体督导" className={inputClass} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></div>
-                <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} /></div>
+                <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => updateTimeField(setDate)(e.target.value)} className={inputClass} /></div>
+                <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => updateTimeField(setStartTime)(e.target.value)} className={inputClass} /></div>
               </div>
-              <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={inputClass} /></div>
+              <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => updateTimeField(setDuration)(Number(e.target.value))} className={inputClass} /></div>
               <div><label className="text-xs text-on-surface-variant block mb-1">关联个案（可选，可多选）</label>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {clients.map((c) => (
@@ -135,10 +142,10 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
             <div className="space-y-4">
               <div><label className="text-xs text-on-surface-variant block mb-1">标题</label><input value={otherTitle} onChange={(e) => setOtherTitle(e.target.value)} placeholder="如：培训、写报告" className={inputClass} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={inputClass} /></div>
-                <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className={inputClass} /></div>
+                <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => updateTimeField(setDate)(e.target.value)} className={inputClass} /></div>
+                <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => updateTimeField(setStartTime)(e.target.value)} className={inputClass} /></div>
               </div>
-              <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={inputClass} /></div>
+              <div><label className="text-xs text-on-surface-variant block mb-1">时长（分钟）</label><input type="number" value={duration} onChange={(e) => updateTimeField(setDuration)(Number(e.target.value))} className={inputClass} /></div>
               <div><label className="text-xs text-on-surface-variant block mb-1">备注</label><textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder="可选" className={inputClass + " resize-none"} /></div>
             </div>
           )}

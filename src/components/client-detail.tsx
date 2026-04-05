@@ -24,7 +24,7 @@ interface ClientDetailProps {
   client: Client;
   allTags: string[];
   useSoap?: boolean;
-  onAddSession: (clientId: string, session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }, total: number) => Promise<boolean>;
+  onAddSession: (clientId: string, session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[]; status: "completed" | "pending" }, total: number) => Promise<boolean>;
   onUpdateSession: (sessionId: string, updates: Partial<Session> & { startTime?: string }) => Promise<boolean>;
   onUpdateClient: (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }) => Promise<boolean>;
   onDeleteTag?: (tag: string) => Promise<boolean>;
