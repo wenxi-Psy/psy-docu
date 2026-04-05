@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { EventType, ScheduleItem } from "@/hooks/useSchedule";
 
-interface Client { id: string; alias: string; }
+interface Client {
+  id: string;
+  alias: string;
+  status: "active" | "paused" | "ended";
+}
 
 interface AddEventModalProps {
   clients: Client[];
@@ -13,11 +17,12 @@ interface AddEventModalProps {
   onSubmitConsultation: (clientId: string, session: { date: string; startTime: string; duration: number; focus: string; note: string; reflection: string; tags: string[] }, currentTotal: number) => Promise<boolean>;
   getClientTotal: (clientId: string) => number;
   checkConflict?: (date: string, startTime: string, duration: number, excludeId?: string) => ScheduleItem[];
+  onAddClient?: (alias: string, notes?: string) => Promise<string | null>;
 }
 
 type Step = "choose" | "consultation" | "supervision" | "other";
 
-export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, onSubmitConsultation, getClientTotal, checkConflict }: AddEventModalProps) {
+export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, onSubmitConsultation, getClientTotal, checkConflict, onAddClient }: AddEventModalProps) {
   const today = initialDate ?? new Date().toISOString().split("T")[0];
   const [step, setStep] = useState<Step>("choose");
   const [date, setDate] = useState(today);
@@ -32,6 +37,16 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
   const [submitting, setSubmitting] = useState(false);
   const [conflictWarning, setConflictWarning] = useState<string | null>(null);
   const [confirmedConflict, setConfirmedConflict] = useState(false);
+
+  // Client selector state
+  const [showInactiveClients, setShowInactiveClients] = useState(false);
+  const [showNewClientForm, setShowNewClientForm] = useState(false);
+  const [newClientAlias, setNewClientAlias] = useState("");
+  const [newClientNotes, setNewClientNotes] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
+
+  const activeClients = clients.filter((c) => c.status === "active");
+  const inactiveClients = clients.filter((c) => c.status !== "active");
 
   const doSubmit = async () => {
     setSubmitting(true);
@@ -62,11 +77,23 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
 
   const toggleClient = (id: string) => setSelectedClientIds((prev) => prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]);
 
-  // Reset conflict state when time fields change
   const updateTimeField = <T,>(setter: (v: T) => void) => (v: T) => {
     setter(v);
     setConflictWarning(null);
     setConfirmedConflict(false);
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClientAlias.trim() || !onAddClient) return;
+    setCreatingClient(true);
+    const newId = await onAddClient(newClientAlias.trim(), newClientNotes || undefined);
+    setCreatingClient(false);
+    if (newId) {
+      setSelectedClientId(newId);
+      setShowNewClientForm(false);
+      setNewClientAlias("");
+      setNewClientNotes("");
+    }
   };
 
   const inputClass = "w-full rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface focus:outline-none focus:border-primary/30 transition-colors";
@@ -100,12 +127,77 @@ export function AddEventModal({ clients, initialDate, onClose, onSubmitEvent, on
 
           {step === "consultation" && (
             <div className="space-y-4">
-              <div><label className="text-xs text-on-surface-variant block mb-1">选择个案</label>
+              {/* Client selector */}
+              <div className="space-y-1.5">
+                <label className="text-xs text-on-surface-variant block">选择个案</label>
                 <select value={selectedClientId} onChange={(e) => setSelectedClientId(e.target.value)} className={inputClass}>
-                  <option value="">请选择...</option>
-                  {clients.map((c) => <option key={c.id} value={c.id}>{c.alias}</option>)}
+                  <option value="">请选择在谈来访...</option>
+                  {activeClients.map((c) => <option key={c.id} value={c.id}>{c.alias}</option>)}
+                  {showInactiveClients && inactiveClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.alias}（{c.status === "paused" ? "暂停" : "已结束"}）
+                    </option>
+                  ))}
                 </select>
+
+                {/* Inactive clients toggle */}
+                {inactiveClients.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInactiveClients(!showInactiveClients)}
+                    className="text-xs text-on-surface-variant hover:text-on-surface transition-colors"
+                  >
+                    {showInactiveClients
+                      ? "▲ 隐藏暂停/结案来访"
+                      : `▼ 显示暂停/结案来访（${inactiveClients.length} 位）`}
+                  </button>
+                )}
+
+                {/* Quick add client */}
+                {onAddClient && !showNewClientForm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewClientForm(true)}
+                    className="text-xs text-primary hover:text-primary-hover transition-colors"
+                  >
+                    + 找不到？快速新建来访
+                  </button>
+                )}
+
+                {/* Inline new client form */}
+                {showNewClientForm && (
+                  <div className="bg-primary-container/20 rounded-2xl p-4 space-y-3 mt-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-on-surface">新建来访</span>
+                      <button type="button" onClick={() => { setShowNewClientForm(false); setNewClientAlias(""); setNewClientNotes(""); }}
+                        className="text-on-surface-variant hover:text-on-surface text-xs">✕</button>
+                    </div>
+                    <input
+                      value={newClientAlias}
+                      onChange={(e) => setNewClientAlias(e.target.value)}
+                      placeholder="代称（必填）"
+                      autoFocus
+                      className={inputClass}
+                    />
+                    <textarea
+                      value={newClientNotes}
+                      onChange={(e) => setNewClientNotes(e.target.value)}
+                      placeholder="备注（选填）"
+                      rows={2}
+                      className={inputClass + " resize-none"}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateClient}
+                      disabled={!newClientAlias.trim() || creatingClient}
+                      className="w-full py-2 rounded-xl bg-primary text-white text-xs font-medium disabled:opacity-40 transition-colors"
+                    >
+                      {creatingClient ? "创建中..." : "创建并选择"}
+                    </button>
+                  </div>
+                )}
               </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs text-on-surface-variant block mb-1">日期</label><input type="date" value={date} onChange={(e) => updateTimeField(setDate)(e.target.value)} className={inputClass} /></div>
                 <div><label className="text-xs text-on-surface-variant block mb-1">开始时间</label><input type="time" value={startTime} onChange={(e) => updateTimeField(setStartTime)(e.target.value)} className={inputClass} /></div>

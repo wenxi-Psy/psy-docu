@@ -182,7 +182,7 @@ interface AppDataContextValue {
   loading: boolean;
   error: string | null;
 
-  addClient: (client: { alias: string; notes: string; color?: string }) => Promise<boolean>;
+  addClient: (client: { alias: string; notes: string; color?: string }) => Promise<string | null>;
   updateClient: (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }) => Promise<boolean>;
   addSession: (
     clientId: string,
@@ -292,17 +292,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   // ─── Mutations ───────────────────────────────────────────────────────────
 
-  const addClient = async (client: { alias: string; notes: string; color?: string }): Promise<boolean> => {
+  const addClient = async (client: { alias: string; notes: string; color?: string }): Promise<string | null> => {
     const userId = await getUserId();
     const row: Record<string, unknown> = {
       alias: client.alias, notes: client.notes,
       status: "active", start_date: new Date().toISOString().split("T")[0], user_id: userId,
     };
     if (client.color) row.color = client.color;
-    const { error } = await supabase.from("clients").insert(row);
-    if (error) return false;
+    const { data, error } = await supabase.from("clients").insert(row).select("id").single();
+    if (error || !data) return null;
     await fetchAll();
-    return true;
+    return data.id as string;
   };
 
   const updateClient = async (id: string, updates: { alias?: string; notes?: string; status?: string; color?: string | null }): Promise<boolean> => {
