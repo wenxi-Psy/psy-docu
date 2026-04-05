@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useStatistics } from "@/hooks/useStatistics";
+import { useRouter } from "next/navigation";
+import { useStatistics, TagFrequency } from "@/hooks/useStatistics";
 
 function formatHours(minutes: number) {
   if (minutes === 0) return "0h";
@@ -10,12 +11,17 @@ function formatHours(minutes: number) {
   return m ? `${h}h${m}m` : `${h}h`;
 }
 
-function OverviewCard({ label, value, sub }: { label: string; value: number; sub?: string }) {
+function OverviewCard({ label, value, sub, onClick }: { label: string; value: number; sub?: string; onClick?: () => void }) {
+  const base = "bg-surface-container-lowest rounded-[2rem] shadow-ambient p-5 transition-colors";
+  const interactive = onClick ? "cursor-pointer hover:bg-primary-container/20 active:scale-[0.98]" : "";
   return (
-    <div className="bg-surface-container-lowest rounded-[2rem] shadow-ambient p-5">
+    <div className={`${base} ${interactive}`} onClick={onClick}>
       <div className="text-2xl font-bold text-on-surface">{value}</div>
       <div className="text-xs text-on-surface-variant mt-1">{label}</div>
       {sub && <div className="text-[11px] text-on-surface-variant/60 mt-0.5">{sub}</div>}
+      {onClick && (
+        <div className="text-[10px] text-primary mt-1.5 font-medium">查看详情 →</div>
+      )}
     </div>
   );
 }
@@ -48,7 +54,6 @@ function AreaChart({ data }: { data: { label: string; count: number; supervision
   const xOf = (i: number) => paddingX + (i / (n - 1)) * chartW;
   const yOf = (v: number) => paddingTop + chartH - (v / maxVal) * chartH;
 
-  // Smooth cubic bezier path
   const smoothPath = (pts: [number, number][]) => {
     if (pts.length < 2) return "";
     let d = `M ${pts[0][0]} ${pts[0][1]}`;
@@ -85,24 +90,13 @@ function AreaChart({ data }: { data: { label: string; count: number; supervision
               <stop offset="100%" stopColor="#625C6C" stopOpacity="0" />
             </linearGradient>
           </defs>
-
-          {/* Horizontal grid lines */}
           {[0.25, 0.5, 0.75, 1].map((r) => (
-            <line key={r}
-              x1={paddingX} y1={paddingTop + chartH * (1 - r)}
-              x2={W - paddingX} y2={paddingTop + chartH * (1 - r)}
-              stroke="rgba(180,182,180,0.15)" strokeWidth="1" />
+            <line key={r} x1={paddingX} y1={paddingTop + chartH * (1 - r)} x2={W - paddingX} y2={paddingTop + chartH * (1 - r)} stroke="rgba(180,182,180,0.15)" strokeWidth="1" />
           ))}
-
-          {/* Supervision area + line */}
           <path d={areaPath(superPts)} fill="url(#gradSuper)" />
           <path d={smoothPath(superPts)} fill="none" stroke="#8B7FA8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-
-          {/* Consultation area + line */}
           <path d={areaPath(consultPts)} fill="url(#gradConsult)" />
           <path d={smoothPath(consultPts)} fill="none" stroke="#5C7A64" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-
-          {/* Data point dots + labels */}
           {consultPts.map(([x, y], i) => (
             <g key={`c${i}`}>
               {data[i].count > 0 && <>
@@ -119,34 +113,53 @@ function AreaChart({ data }: { data: { label: string; count: number; supervision
               </>}
             </g>
           ))}
-
-          {/* X-axis labels */}
           {data.map((d, i) => (
             <text key={`l${i}`} x={xOf(i)} y={H - 4} textAnchor="middle" fontSize="11" fill="#9a9c9a" fontFamily="Inter,system-ui,sans-serif">{d.label}</text>
           ))}
         </svg>
       </div>
       <div className="flex justify-center gap-6 mt-2">
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 rounded-full bg-[#5C7A64]" />
-          <span className="text-xs text-on-surface-variant">咨询</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-4 h-0.5 rounded-full bg-[#8B7FA8]" />
-          <span className="text-xs text-on-surface-variant">督导</span>
-        </div>
+        <div className="flex items-center gap-1.5"><div className="w-4 h-0.5 rounded-full bg-[#5C7A64]" /><span className="text-xs text-on-surface-variant">咨询</span></div>
+        <div className="flex items-center gap-1.5"><div className="w-4 h-0.5 rounded-full bg-[#8B7FA8]" /><span className="text-xs text-on-surface-variant">督导</span></div>
       </div>
     </div>
   );
 }
 
-function StatusBar({ active, paused, ended }: { active: number; paused: number; ended: number }) {
+function TagCloud({ topTags }: { topTags: TagFrequency[] }) {
+  if (topTags.length === 0) return null;
+  const max = topTags[0].count;
+  return (
+    <div className="bg-surface-container-lowest rounded-[2rem] shadow-ambient p-6 space-y-4">
+      <h3 className="text-sm font-semibold text-on-surface">议题标签频率</h3>
+      <div className="space-y-2">
+        {topTags.map(({ tag, count }) => (
+          <div key={tag} className="flex items-center gap-3">
+            <span className="text-xs text-on-surface-variant w-24 truncate shrink-0">{tag}</span>
+            <div className="flex-1 bg-surface-container-low rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-500"
+                style={{ width: `${(count / max) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs font-medium text-on-surface w-6 text-right shrink-0">{count}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatusBar({ active, paused, ended, onClickActive, onClickPaused, onClickEnded }: {
+  active: number; paused: number; ended: number;
+  onClickActive: () => void; onClickPaused: () => void; onClickEnded: () => void;
+}) {
   const total = active + paused + ended;
   if (total === 0) return null;
   const segments = [
-    { label: "在谈", count: active, color: "bg-primary", emoji: "🌱" },
-    { label: "暂停", count: paused, color: "bg-amber", emoji: "🌙" },
-    { label: "已结束", count: ended, color: "bg-surface-dim", emoji: "🍂" },
+    { label: "在谈", count: active, color: "bg-primary", emoji: "🌱", onClick: onClickActive },
+    { label: "暂停", count: paused, color: "bg-amber", emoji: "🌙", onClick: onClickPaused },
+    { label: "已结束", count: ended, color: "bg-surface-dim", emoji: "🍂", onClick: onClickEnded },
   ].filter((s) => s.count > 0);
 
   return (
@@ -155,13 +168,14 @@ function StatusBar({ active, paused, ended }: { active: number; paused: number; 
       <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
         {segments.map((s) => <div key={s.label} className={`${s.color} rounded-full`} style={{ width: `${(s.count / total) * 100}%` }} />)}
       </div>
-      <div className="flex gap-6">
+      <div className="flex gap-6 flex-wrap">
         {segments.map((s) => (
-          <div key={s.label} className="flex items-center gap-2">
+          <button key={s.label} onClick={s.onClick}
+            className="flex items-center gap-2 hover:opacity-70 transition-opacity">
             <span className="text-sm">{s.emoji}</span>
             <span className="text-sm text-on-surface-variant">{s.label}</span>
             <span className="text-sm font-semibold text-on-surface">{s.count}</span>
-          </div>
+          </button>
         ))}
       </div>
     </div>
@@ -171,6 +185,7 @@ function StatusBar({ active, paused, ended }: { active: number; paused: number; 
 export default function StatsPage() {
   const { stats, loading, error, refetch } = useStatistics();
   const [monthIndex, setMonthIndex] = useState<number | null>(null);
+  const router = useRouter();
 
   const currentIndex = monthIndex ?? (stats ? stats.availableMonths.length - 1 : 0);
   const selectedMonth = stats?.availableMonths[currentIndex];
@@ -189,12 +204,24 @@ export default function StatsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <OverviewCard label={`${selectedMonth?.label.replace(/^\d+年/, "")}咨询`} value={selectedMonth?.sessions ?? 0} sub={formatHours(selectedMonth?.minutes ?? 0)} />
         <OverviewCard label={`${selectedMonth?.label.replace(/^\d+年/, "")}督导`} value={selectedMonth?.supervisions ?? 0} sub={formatHours(selectedMonth?.supervisionMinutes ?? 0)} />
-        <OverviewCard label="在谈个案" value={stats.activeClients} />
+        <OverviewCard
+          label="在谈个案"
+          value={stats.activeClients}
+          onClick={() => router.push("/?status=active")}
+        />
         <OverviewCard label="累计咨询" value={stats.totalSessions} sub={`共 ${formatHours(stats.totalMinutes)}`} />
       </div>
 
       <AreaChart data={stats.monthlyTrend} />
-      <StatusBar active={stats.activeClients} paused={stats.pausedClients} ended={stats.endedClients} />
+      {stats.topTags.length > 0 && <TagCloud topTags={stats.topTags} />}
+      <StatusBar
+        active={stats.activeClients}
+        paused={stats.pausedClients}
+        ended={stats.endedClients}
+        onClickActive={() => router.push("/?status=active")}
+        onClickPaused={() => router.push("/?status=paused")}
+        onClickEnded={() => router.push("/?status=ended")}
+      />
     </div>
   );
 }
