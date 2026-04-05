@@ -12,68 +12,98 @@ const NAV_ITEMS = [
   { href: "/settings", label: "设置", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
 
+/** Desktop sidebar (hidden on mobile) */
 export function Sidebar() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <aside className={`flex flex-col h-full bg-surface-container-low rounded-r-[32px] transition-all duration-200 ${collapsed ? "w-16" : "w-60"}`}>
-      {/* Logo */}
-      <div className="px-6 pt-8 pb-6 flex items-center gap-3">
-        <span className="text-2xl">🌿</span>
-        {!collapsed && (
-          <div>
-            <div className="font-bold text-[15px] text-on-surface tracking-tight">宁静账本</div>
-            <div className="text-[10px] text-on-surface-variant tracking-[0.15em] font-medium">DIGITAL SANCTUARY</div>
-          </div>
-        )}
-      </div>
+    <>
+      {/* Desktop sidebar */}
+      <aside className={`hidden md:flex flex-col h-full bg-surface-container-low rounded-r-[32px] transition-all duration-200 ${collapsed ? "w-16" : "w-60"}`}>
+        {/* Logo */}
+        <div className="px-6 pt-8 pb-6 flex items-center gap-3">
+          <span className="text-2xl">🌿</span>
+          {!collapsed && (
+            <div>
+              <div className="font-bold text-[15px] text-on-surface tracking-tight">宁静账本</div>
+              <div className="text-[10px] text-on-surface-variant tracking-[0.15em] font-medium">DIGITAL SANCTUARY</div>
+            </div>
+          )}
+        </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 space-y-1">
+        {/* Nav */}
+        <nav className="flex-1 px-3 space-y-1">
+          {NAV_ITEMS.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link key={item.href} href={item.href}
+                className={`relative flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm transition-all duration-150 ${
+                  active
+                    ? "bg-primary-container/50 text-primary font-medium"
+                    : "text-on-surface-variant hover:bg-surface-container-lowest/70 hover:text-on-surface"
+                }`}>
+                {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary" />}
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d={item.icon} />
+                </svg>
+                {!collapsed && <span className="tracking-tight">{item.label}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Footer */}
+        <div className="px-4 pb-6 space-y-3">
+          {!collapsed && user && (
+            <div className="flex items-center gap-3 px-3 py-2">
+              <div className="w-8 h-8 rounded-full bg-on-surface text-surface-container-lowest flex items-center justify-center text-xs font-bold">
+                {(user.email?.[0] ?? "U").toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] text-on-surface-variant font-medium">咨询师</div>
+              </div>
+              <button onClick={signOut} className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/60 transition-colors" title="退出登录">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+              </button>
+            </div>
+          )}
+          <button onClick={() => setCollapsed(!collapsed)} className="w-full flex justify-center py-1 text-on-surface-variant/50 hover:text-on-surface-variant transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points={collapsed ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      {/* Mobile bottom nav */}
+      <MobileBottomNav pathname={pathname} />
+    </>
+  );
+}
+
+function MobileBottomNav({ pathname }: { pathname: string }) {
+  return (
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 safe-area-bottom">
+      <div className="flex">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}
-              className={`relative flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm transition-all duration-150 ${
-                active
-                  ? "bg-primary-container/50 text-primary font-medium"
-                  : "text-on-surface-variant hover:bg-surface-container-lowest/70 hover:text-on-surface"
+              className={`flex-1 flex flex-col items-center gap-1 py-2.5 transition-colors ${
+                active ? "text-primary" : "text-on-surface-variant"
               }`}>
-              {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary" />}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d={item.icon} />
               </svg>
-              {!collapsed && <span className="tracking-tight">{item.label}</span>}
+              <span className={`text-[10px] ${active ? "font-semibold" : "font-normal"}`}>{item.label}</span>
             </Link>
           );
         })}
-      </nav>
-
-      {/* Footer */}
-      <div className="px-4 pb-6 space-y-3">
-        {!collapsed && user && (
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-on-surface text-surface-container-lowest flex items-center justify-center text-xs font-bold">
-              {(user.email?.[0] ?? "U").toUpperCase()}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[11px] text-on-surface-variant font-medium">咨询师</div>
-            </div>
-            <button onClick={signOut} className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-lowest/60 transition-colors" title="退出登录">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-              </svg>
-            </button>
-          </div>
-        )}
-        <button onClick={() => setCollapsed(!collapsed)} className="w-full flex justify-center py-1 text-on-surface-variant/50 hover:text-on-surface-variant transition-colors">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points={collapsed ? "9 18 15 12 9 6" : "15 18 9 12 15 6"} />
-          </svg>
-        </button>
       </div>
-    </aside>
+    </nav>
   );
 }

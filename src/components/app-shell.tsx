@@ -18,7 +18,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <AuthGuard>
         <div className="flex h-screen bg-surface">
           <Sidebar />
-          <main className="flex-1 overflow-y-auto p-0">{children}</main>
+          <main className="flex-1 overflow-y-auto p-0 pb-[calc(env(safe-area-inset-bottom)+64px)] md:pb-0">{children}</main>
         </div>
       </AuthGuard>
     </AppDataProvider>

@@ -30,8 +30,8 @@ export function DetailPanel({ item, onClose, onComplete, onCancel, onEditSchedul
   const end = endTime(item.startTime, item.duration);
   const statusDisplay = STATUS_DISPLAY[item.status];
 
-  return (
-    <div className="w-80 flex-shrink-0 border-l border-outline-variant/50 pl-6 space-y-5 overflow-y-auto">
+  const content = (
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -168,5 +168,20 @@ export function DetailPanel({ item, onClose, onComplete, onCancel, onEditSchedul
         </a>
       )}
     </div>
+  );
+
+  return (
+    <>
+      {/* Desktop: side panel */}
+      <div className="hidden md:block w-80 flex-shrink-0 border-l border-outline-variant/50 pl-6 overflow-y-auto">
+        {content}
+      </div>
+
+      {/* Mobile: bottom sheet overlay */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-40 bg-surface rounded-t-3xl shadow-lifted p-5 overflow-y-auto max-h-[75vh] pb-[calc(env(safe-area-inset-bottom)+72px)]">
+        <div className="w-10 h-1 rounded-full bg-surface-dim mx-auto mb-4" />
+        {content}
+      </div>
+    </>
   );
 }

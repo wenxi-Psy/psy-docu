@@ -121,7 +121,7 @@ export default function SchedulePage() {
   return (
     <div className="flex flex-col h-full">
       {/* Fixed top section */}
-      <div className="flex-shrink-0 px-8 pt-6 pb-4 space-y-4">
+      <div className="flex-shrink-0 px-4 md:px-8 pt-6 pb-4 space-y-4">
         <ScheduleControlBar
           selectedDate={selectedDate}
           viewMode={viewMode}
@@ -144,7 +144,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Content area */}
-      <div className="flex flex-1 overflow-hidden px-8 pb-4">
+      <div className="flex flex-1 overflow-hidden px-4 md:px-8 pb-4">
         {viewMode === "day" ? (
           <DayView
             items={dayItems}
