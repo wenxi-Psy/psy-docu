@@ -2,6 +2,7 @@
 
 import { AuthGuard } from "./auth-guard";
 import { Sidebar } from "./sidebar";
+import { AppDataProvider } from "@/contexts/app-data-context";
 import { usePathname } from "next/navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -13,11 +14,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthGuard>
-      <div className="flex h-screen bg-surface">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto p-0">{children}</main>
-      </div>
-    </AuthGuard>
+    <AppDataProvider>
+      <AuthGuard>
+        <div className="flex h-screen bg-surface">
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto p-0">{children}</main>
+        </div>
+      </AuthGuard>
+    </AppDataProvider>
   );
 }

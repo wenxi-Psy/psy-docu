@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from "react";
 import { useSchedule, ScheduleItem } from "@/hooks/useSchedule";
-import { useClients } from "@/hooks/useClients";
 import { AddEventModal } from "@/components/add-event-modal";
 import { ScheduleControlBar } from "./schedule-control-bar";
 import { WeekSelector } from "./week-selector";
@@ -26,8 +25,7 @@ type ModalState =
   | { type: "cancel"; item: ScheduleItem };
 
 export default function SchedulePage() {
-  const { loading, error, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
-  const { clients, allTags, addSession, refetch: refetchClients } = useClients();
+  const { loading, error, clients, allTags, addSession, getItemsForDate, datesWithItems, checkConflict, addEvent, updateSessionSchedule, updateEventSchedule, completeConsultation, completeEvent, cancelItem, revertToPending, refetch } = useSchedule();
   const { profile } = useProfile();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("day");
@@ -93,17 +91,12 @@ export default function SchedulePage() {
     } else {
       ok = await updateEventSchedule(item.id, updates);
     }
-    if (ok) {
-      await refetchClients();
-      setSelectedItemId(null);
-    }
+    if (ok) setSelectedItemId(null);
     return ok;
   };
 
   const handleCompleteConsultation = async (sessionId: string, updates: { focus: string; note: string; reflection: string; tags: string[]; subjective?: string; objective?: string; assessment?: string; plan?: string }) => {
-    const ok = await completeConsultation(sessionId, updates);
-    if (ok) await refetchClients(); // Sync client detail page data
-    return ok;
+    return completeConsultation(sessionId, updates);
   };
 
   const handleCompleteSupervision = async (eventId: string, note?: string) => {

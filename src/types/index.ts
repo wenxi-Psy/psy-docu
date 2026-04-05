@@ -11,7 +11,6 @@ export interface Session {
   reflection: string;
   tags: string[];
   status: ScheduleStatus;
-  // SOAP fields (optional for backward compatibility)
   subjective?: string;
   objective?: string;
   assessment?: string;
@@ -30,4 +29,40 @@ export interface Client {
   days: number;
   notes: string;
   sessions: Session[];
+}
+
+export type EventType = "consultation" | "supervision" | "other";
+
+export interface ScheduleItem {
+  id: string;
+  type: EventType;
+  title: string;
+  date: string;
+  startTime: string;
+  duration: number;
+  note: string;
+  status: ScheduleStatus;
+  cancelReason?: string;
+  clientId?: string;
+  clientAlias?: string;
+  focus?: string;
+  reflection?: string;
+  tags?: string[];
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
+  number?: number;
+  totalSessions?: number;
+  clientStartDate?: string;
+  clientColor?: string | null;
+  relatedClients?: { id: string; alias: string }[];
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  displayName: string;
+  defaultDuration: number;
+  useSoap: boolean;
 }

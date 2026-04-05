@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { useMemo } from "react";
+import { useAppData } from "@/contexts/app-data-context";
 
 export interface MonthlyData {
   month: string; label: string; count: number; totalMinutes: number;
@@ -20,69 +20,55 @@ export interface Statistics {
 }
 
 export function useStatistics() {
-  const [stats, setStats] = useState<Statistics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { clients, scheduleItems, loading, error, refetch } = useAppData();
 
-  const fetchStats = useCallback(async () => {
-      const now = new Date();
-      const [sessRes, evtRes, clientRes] = await Promise.all([
-        supabase.from("sessions").select("date, duration, status"),
-        supabase.from("events").select("type, date, duration, status").eq("type", "supervision"),
-        supabase.from("clients").select("status"),
-      ]);
+  const stats = useMemo<Statistics>(() => {
+    const now = new Date();
 
-      if (sessRes.error || evtRes.error || clientRes.error) {
-        console.error("fetchStats error:", sessRes.error, evtRes.error, clientRes.error);
-        setError("数据加载失败，请检查网络后重试");
-        setLoading(false);
-        return;
-      }
+    const sessions = scheduleItems.filter(
+      (i) => i.type === "consultation" && i.status === "completed"
+    );
+    const supervisions = scheduleItems.filter(
+      (i) => i.type === "supervision" && i.status === "completed"
+    );
 
-      // Only count completed sessions and supervisions
-      const sessions = (sessRes.data ?? []).filter((s) => s.status === "completed");
-      const supervisions = (evtRes.data ?? []).filter((s) => s.status === "completed");
-      const clients = clientRes.data ?? [];
+    const totalSessions = sessions.length;
+    const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
+    const activeClients = clients.filter((c) => c.status === "active").length;
+    const pausedClients = clients.filter((c) => c.status === "paused").length;
+    const endedClients = clients.filter((c) => c.status === "ended").length;
 
-      const totalSessions = sessions.length;
-      const totalMinutes = sessions.reduce((sum, s) => sum + ((s.duration as number) || 0), 0);
-      const activeClients = clients.filter((c) => c.status === "active").length;
-      const pausedClients = clients.filter((c) => c.status === "paused").length;
-      const endedClients = clients.filter((c) => c.status === "ended").length;
+    const monthlyTrend: MonthlyData[] = [];
+    const availableMonths: MonthOverview[] = [];
 
-      const monthlyTrend: MonthlyData[] = [];
-      const availableMonths: MonthOverview[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const shortLabel = `${d.getMonth() + 1}月`;
+      const fullLabel = `${d.getFullYear()}年${d.getMonth() + 1}月`;
 
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        const shortLabel = `${d.getMonth() + 1}月`;
-        const fullLabel = `${d.getFullYear()}年${d.getMonth() + 1}月`;
+      const monthSess = sessions.filter((s) => s.date.startsWith(key));
+      const monthSup = supervisions.filter((s) => s.date.startsWith(key));
 
-        const monthSess = sessions.filter((s) => (s.date as string).startsWith(key));
-        const monthSup = supervisions.filter((s) => (s.date as string).startsWith(key));
+      monthlyTrend.push({
+        month: key, label: shortLabel,
+        count: monthSess.length,
+        totalMinutes: monthSess.reduce((sum, s) => sum + s.duration, 0),
+        supervisionCount: monthSup.length,
+        supervisionMinutes: monthSup.reduce((sum, s) => sum + s.duration, 0),
+      });
 
-        monthlyTrend.push({
-          month: key, label: shortLabel,
-          count: monthSess.length, totalMinutes: monthSess.reduce((sum, s) => sum + ((s.duration as number) || 0), 0),
-          supervisionCount: monthSup.length, supervisionMinutes: monthSup.reduce((sum, s) => sum + ((s.duration as number) || 0), 0),
-        });
+      availableMonths.push({
+        key, label: fullLabel,
+        sessions: monthSess.length,
+        minutes: monthSess.reduce((sum, s) => sum + s.duration, 0),
+        supervisions: monthSup.length,
+        supervisionMinutes: monthSup.reduce((sum, s) => sum + s.duration, 0),
+      });
+    }
 
-        availableMonths.push({
-          key, label: fullLabel,
-          sessions: monthSess.length, minutes: monthSess.reduce((sum, s) => sum + ((s.duration as number) || 0), 0),
-          supervisions: monthSup.length, supervisionMinutes: monthSup.reduce((sum, s) => sum + ((s.duration as number) || 0), 0),
-        });
-      }
+    return { totalSessions, totalMinutes, activeClients, pausedClients, endedClients, monthlyTrend, availableMonths };
+  }, [clients, scheduleItems]);
 
-      setError(null);
-      setStats({ totalSessions, totalMinutes, activeClients, pausedClients, endedClients, monthlyTrend, availableMonths });
-      setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
-
-  return { stats, loading, error, refetch: fetchStats };
+  return { stats, loading, error, refetch };
 }
