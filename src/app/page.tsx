@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useClients } from "@/hooks/useClients";
 import { useProfile } from "@/hooks/useProfile";
 import { ClientCard } from "@/components/client-card";
@@ -10,10 +11,17 @@ import { AddClientModal } from "@/components/add-client-modal";
 export default function HomePage() {
   const { clients, loading, error, allTags, addClient, updateClient, addSession, updateSession, deleteTag, refetch } = useClients();
   const { profile } = useProfile();
+  const searchParams = useSearchParams();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+
+  // Apply status filter from URL param (e.g. from stats page drill-down)
+  useEffect(() => {
+    const s = searchParams.get("status");
+    if (s && ["active", "paused", "ended"].includes(s)) setStatusFilter(s);
+  }, [searchParams]);
 
   const filteredClients = clients.filter((c) => {
     if (statusFilter !== "all" && c.status !== statusFilter) return false;

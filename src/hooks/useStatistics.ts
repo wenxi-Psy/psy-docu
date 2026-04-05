@@ -13,10 +13,16 @@ export interface MonthOverview {
   supervisions: number; supervisionMinutes: number;
 }
 
+export interface TagFrequency {
+  tag: string;
+  count: number;
+}
+
 export interface Statistics {
   totalSessions: number; totalMinutes: number;
   activeClients: number; pausedClients: number; endedClients: number;
   monthlyTrend: MonthlyData[]; availableMonths: MonthOverview[];
+  topTags: TagFrequency[];
 }
 
 export function useStatistics() {
@@ -37,6 +43,18 @@ export function useStatistics() {
     const activeClients = clients.filter((c) => c.status === "active").length;
     const pausedClients = clients.filter((c) => c.status === "paused").length;
     const endedClients = clients.filter((c) => c.status === "ended").length;
+
+    // Tag frequency across all completed sessions
+    const tagCounts = new Map<string, number>();
+    sessions.forEach((s) => {
+      (s.tags ?? []).forEach((tag) => {
+        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+      });
+    });
+    const topTags: TagFrequency[] = Array.from(tagCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 12)
+      .map(([tag, count]) => ({ tag, count }));
 
     const monthlyTrend: MonthlyData[] = [];
     const availableMonths: MonthOverview[] = [];
@@ -67,7 +85,7 @@ export function useStatistics() {
       });
     }
 
-    return { totalSessions, totalMinutes, activeClients, pausedClients, endedClients, monthlyTrend, availableMonths };
+    return { totalSessions, totalMinutes, activeClients, pausedClients, endedClients, monthlyTrend, availableMonths, topTags };
   }, [clients, scheduleItems]);
 
   return { stats, loading, error, refetch };
