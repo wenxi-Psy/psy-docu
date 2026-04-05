@@ -89,7 +89,16 @@ export default function HomePage() {
         )}
       </div>
 
-      {showAddClient && <AddClientModal onClose={() => setShowAddClient(false)} onSubmit={addClient} />}
+      {showAddClient && (
+        <AddClientModal
+          onClose={() => setShowAddClient(false)}
+          onSubmit={async (client) => {
+            const newId = await addClient(client);
+            if (newId) setSelectedId(newId);
+            return newId;
+          }}
+        />
+      )}
     </div>
   );
 }
