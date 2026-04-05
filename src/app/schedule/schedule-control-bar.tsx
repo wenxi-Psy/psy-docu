@@ -65,7 +65,7 @@ export function ScheduleControlBar({ selectedDate, viewMode, onViewModeChange, c
             回到今天
           </button>
         )}
-        <div className="flex bg-surface-container-low rounded-full p-0.5">
+        <div className="hidden md:flex bg-surface-container-low rounded-full p-0.5">
           {(["day", "week"] as ViewMode[]).map((m) => (
             <button key={m} onClick={() => onViewModeChange(m)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${viewMode === m ? "bg-primary text-white shadow-sm" : "text-on-surface-variant hover:text-on-surface"}`}>

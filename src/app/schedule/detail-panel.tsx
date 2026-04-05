@@ -123,7 +123,7 @@ export function DetailPanel({ item, onClose, onComplete, onCancel, onEditSchedul
       <div className="space-y-2 pt-2">
         <button onClick={() => onEditSchedule(item)}
           className="w-full py-2.5 rounded-xl border border-outline-variant text-sm text-on-surface-variant hover:bg-surface-container-low transition-colors">
-          编辑时间
+          编辑日程
         </button>
         {item.status === "pending" && (
           <>
