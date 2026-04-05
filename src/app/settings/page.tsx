@@ -43,8 +43,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="max-w-lg mx-auto px-6 py-8 space-y-6">
+    <div className="max-w-lg mx-auto px-4 md:px-6 py-8 space-y-6">
         <h1 className="text-xl font-bold text-on-surface tracking-tight">设置</h1>
 
         {/* Personal info */}
@@ -124,7 +123,6 @@ export default function SettingsPage() {
         >
           {saving ? "保存中..." : saved ? "已保存 ✓" : "保存设置"}
         </button>
-      </div>
     </div>
   );
 }
