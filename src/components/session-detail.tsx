@@ -25,7 +25,10 @@ const SOAP_LABELS: { key: keyof Session; letter: string; label: string; color: s
 /* ── Display-only card (shown in the sidebar) ── */
 function SessionView({ session, useSoap, onEdit }: { session: Session; useSoap: boolean; onEdit: () => void }) {
   const hasSoapContent = !!(session.subjective || session.objective || session.assessment || session.plan);
-  const showSoap = useSoap || hasSoapContent;
+  // For existing sessions, show SOAP only if SOAP content exists.
+  // The global useSoap flag applies to new sessions only.
+  const hasLegacyContent = !!(session.focus || session.note || session.reflection);
+  const showSoap = hasSoapContent && !hasLegacyContent;
 
   return (
     <div className="bg-surface-container-lowest rounded-[2rem] shadow-ambient p-6 space-y-4">
@@ -96,7 +99,10 @@ function EditSessionModal({ session, allTags, useSoap, onUpdate, onDeleteTag, on
   const [saving, setSaving] = useState(false);
 
   const hasSoapContent = !!(session.subjective || session.objective || session.assessment || session.plan);
-  const showSoap = useSoap || hasSoapContent;
+  const hasLegacyContent = !!(session.focus || session.note || session.reflection);
+  // Show SOAP edit fields only if session already has SOAP content,
+  // OR if useSoap is on AND there's no legacy content to preserve.
+  const showSoap = hasSoapContent || (useSoap && !hasLegacyContent);
 
   const soapSetters: Record<string, (v: string) => void> = { subjective: setSubjective, objective: setObjective, assessment: setAssessment, plan: setPlan };
   const soapValues: Record<string, string> = { subjective, objective, assessment, plan };
