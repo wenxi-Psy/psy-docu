@@ -52,6 +52,9 @@ export function SessionTimeline({ sessions, onSelect, selectedId }: SessionTimel
                 {isCancelled && (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-medium">已取消</span>
                 )}
+                {s.status === "completed" && !s.focus && !s.note && !s.subjective && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-bg text-amber font-medium">待补填</span>
+                )}
               </div>
               {s.focus && !isPending && <div className="text-sm text-on-surface mt-0.5 truncate">焦点：{s.focus}</div>}
               {isPending && <div className="text-sm text-on-surface-variant mt-0.5">{s.startTime} · {s.duration} 分钟</div>}

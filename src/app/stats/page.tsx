@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useStatistics, TagFrequency } from "@/hooks/useStatistics";
+import { useAppData } from "@/contexts/app-data-context";
 
 function formatHours(minutes: number) {
   if (minutes === 0) return "0h";
@@ -182,6 +183,55 @@ function StatusBar({ active, paused, ended, onClickActive, onClickPaused, onClic
   );
 }
 
+function SupervisionLog() {
+  const { scheduleItems } = useAppData();
+  const [expanded, setExpanded] = useState(false);
+
+  const supervisions = scheduleItems
+    .filter((i) => i.type === "supervision")
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  if (supervisions.length === 0) return null;
+
+  const shown = expanded ? supervisions : supervisions.slice(0, 3);
+
+  return (
+    <div className="bg-surface-container-lowest rounded-[2rem] shadow-ambient p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-on-surface">督导记录</h3>
+        <span className="text-xs text-on-surface-variant">{supervisions.length} 条</span>
+      </div>
+      <div className="space-y-3">
+        {shown.map((item) => (
+          <div key={item.id} className="flex items-start gap-3">
+            <div className="w-1.5 h-1.5 rounded-full bg-[#8B7FA8] mt-2 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-on-surface truncate">{item.title}</span>
+                <span className="text-xs text-on-surface-variant shrink-0">{item.date}</span>
+              </div>
+              {item.relatedClients && item.relatedClients.length > 0 && (
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {item.relatedClients.map((c) => (
+                    <span key={c.id} className="text-[11px] px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container">{c.alias}</span>
+                  ))}
+                </div>
+              )}
+              {item.note && <p className="text-xs text-on-surface-variant mt-1 line-clamp-2">{item.note}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {supervisions.length > 3 && (
+        <button onClick={() => setExpanded(!expanded)}
+          className="w-full text-xs text-primary hover:text-primary-hover transition-colors pt-1">
+          {expanded ? "收起" : `查看全部 ${supervisions.length} 条 →`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function StatsPage() {
   const { stats, loading, error, refetch } = useStatistics();
   const [monthIndex, setMonthIndex] = useState<number | null>(null);
@@ -214,6 +264,7 @@ export default function StatsPage() {
 
       <AreaChart data={stats.monthlyTrend} />
       {stats.topTags.length > 0 && <TagCloud topTags={stats.topTags} />}
+      <SupervisionLog />
       <StatusBar
         active={stats.activeClients}
         paused={stats.pausedClients}

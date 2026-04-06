@@ -23,6 +23,12 @@ export default function HomePage() {
     if (s && ["active", "paused", "ended"].includes(s)) setStatusFilter(s);
   }, [searchParams]);
 
+  // Auto-select client from URL param (e.g. from schedule page "查看个案详情" link)
+  useEffect(() => {
+    const c = searchParams.get("client");
+    if (c) setSelectedId(c);
+  }, [searchParams]);
+
   const filteredClients = clients.filter((c) => {
     if (statusFilter !== "all" && c.status !== statusFilter) return false;
     if (search && !c.alias.toLowerCase().includes(search.toLowerCase())) return false;
