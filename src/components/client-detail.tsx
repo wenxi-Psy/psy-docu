@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Client, Session } from "@/types";
 import { StatsCard } from "./stats-card";
 import { SessionTimeline } from "./session-timeline";
@@ -35,11 +35,19 @@ interface ClientDetailProps {
 
 export function ClientDetail({ client, allTags, useSoap = false, onAddSession, onUpdateSession, onUpdateClient, onDeleteTag }: ClientDetailProps) {
   const { scheduleItems } = useAppData();
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [showAddSession, setShowAddSession] = useState(false);
   const [showEditClient, setShowEditClient] = useState(false);
   const [tab, setTab] = useState<Tab>("sessions");
   const [sessionSearch, setSessionSearch] = useState("");
+
+  // Derive selected session from live client.sessions (so edits auto-reflect)
+  const selectedSession = selectedSessionId
+    ? (client.sessions.find((s) => s.id === selectedSessionId) ?? null)
+    : null;
+
+  // Reset selection when client changes
+  useEffect(() => { setSelectedSessionId(null); setSessionSearch(""); }, [client.id]);
 
   const status = STATUS_MAP[client.status];
   const nextStatus = NEXT_STATUS[client.status];
@@ -51,6 +59,17 @@ export function ClientDetail({ client, allTags, useSoap = false, onAddSession, o
       .sort((a, b) => b.date.localeCompare(a.date)),
     [scheduleItems, client.id]
   );
+
+  // Sorted sessions (matches SessionTimeline sort order) for prev/next navigation
+  const sortedSessions = useMemo(() => {
+    const pending = client.sessions.filter((s) => s.status === "pending").sort((a, b) => a.date.localeCompare(b.date));
+    const rest = client.sessions.filter((s) => s.status !== "pending");
+    return [...pending, ...rest];
+  }, [client.sessions]);
+
+  const selectedIndex = selectedSessionId ? sortedSessions.findIndex((s) => s.id === selectedSessionId) : -1;
+  const prevSession = selectedIndex > 0 ? sortedSessions[selectedIndex - 1] : null;
+  const nextSession = selectedIndex < sortedSessions.length - 1 ? sortedSessions[selectedIndex + 1] : null;
 
   // Filtered sessions by search
   const filteredSessions = useMemo(() => {
@@ -120,9 +139,40 @@ export function ClientDetail({ client, allTags, useSoap = false, onAddSession, o
 
       {/* Content */}
       {tab === "sessions" && (
-        <div className="flex gap-6">
-          <div className="flex-1 min-w-0">
-            {/* Session search */}
+        selectedSession ? (
+          /* ── Full-width session view ── */
+          <div className="space-y-5">
+            {/* Top nav bar */}
+            <div className="flex items-center justify-between">
+              <button onClick={() => setSelectedSessionId(null)}
+                className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+                全部咨询记录
+              </button>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setSelectedSessionId(prevSession!.id)} disabled={!prevSession}
+                  className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low disabled:opacity-25 transition-colors" title="上一条">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <span className="text-xs text-on-surface-variant px-2 tabular-nums">
+                  {selectedIndex + 1} / {sortedSessions.length}
+                </span>
+                <button onClick={() => setSelectedSessionId(nextSession!.id)} disabled={!nextSession}
+                  className="p-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low disabled:opacity-25 transition-colors" title="下一条">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </div>
+            </div>
+            {/* Session detail — max width for comfortable reading */}
+            <div className="max-w-2xl">
+              <SessionDetail session={selectedSession} allTags={allTags} useSoap={useSoap} onUpdate={onUpdateSession} onDeleteTag={onDeleteTag} />
+            </div>
+          </div>
+        ) : (
+          /* ── Timeline view ── */
+          <div>
             {client.sessions.length > 2 && (
               <div className="relative mb-4">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50">
@@ -130,7 +180,7 @@ export function ClientDetail({ client, allTags, useSoap = false, onAddSession, o
                 </svg>
                 <input
                   value={sessionSearch}
-                  onChange={(e) => { setSessionSearch(e.target.value); setSelectedSession(null); }}
+                  onChange={(e) => setSessionSearch(e.target.value)}
                   placeholder="搜索焦点、笔记、标签..."
                   className="w-full pl-9 pr-3 py-2 rounded-xl bg-surface-container-lowest border border-outline-variant/50 text-sm text-on-surface placeholder:text-on-surface-variant/40 focus:outline-none focus:border-primary/30 transition-colors"
                 />
@@ -139,14 +189,9 @@ export function ClientDetail({ client, allTags, useSoap = false, onAddSession, o
             {sessionSearch && filteredSessions.length === 0 && (
               <p className="text-sm text-on-surface-variant py-4 text-center">无匹配记录</p>
             )}
-            <SessionTimeline sessions={filteredSessions} onSelect={setSelectedSession} selectedId={selectedSession?.id} />
+            <SessionTimeline sessions={filteredSessions} onSelect={(s) => setSelectedSessionId(s.id)} selectedId={selectedSessionId ?? undefined} />
           </div>
-          {selectedSession && (
-            <div className="w-80 flex-shrink-0">
-              <SessionDetail session={selectedSession} allTags={allTags} useSoap={useSoap} onUpdate={onUpdateSession} onDeleteTag={onDeleteTag} />
-            </div>
-          )}
-        </div>
+        )
       )}
 
       {tab === "supervisions" && (
