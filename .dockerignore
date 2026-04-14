@@ -1,0 +1,6 @@
+.git
+.next
+node_modules
+cloudflare-proxy
+*.md
+.env*.local
