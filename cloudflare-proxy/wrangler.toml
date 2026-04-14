@@ -1,0 +1,13 @@
+# Wrangler config for Cloudflare Worker deployment
+# Install wrangler: npm install -g wrangler
+# Deploy:          wrangler deploy
+# Local preview:   wrangler dev
+
+name = "psy-docu-proxy"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+# Uncomment and fill in to bind a custom domain (recommended for CN access):
+# [[routes]]
+# pattern = "your-domain.com/*"
+# zone_name = "your-domain.com"
