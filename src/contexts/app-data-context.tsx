@@ -342,7 +342,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       focus: session.focus, note: session.note, reflection: session.reflection, tags: session.tags,
       subjective: session.subjective ?? null, objective: session.objective ?? null,
       assessment: session.assessment ?? null, plan: session.plan ?? null,
-      status: session.status ?? "completed", user_id: userId,
+      status: session.status ?? "pending", user_id: userId,
     }).select("*").single();
     if (error || !data) return false;
     setSessionRows((prev) => [data as Record<string, unknown>, ...prev]);
