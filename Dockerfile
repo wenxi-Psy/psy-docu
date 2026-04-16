@@ -1,6 +1,6 @@
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat bash
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -22,6 +22,7 @@ RUN npm run build
 
 # Stage 3: Production runner
 FROM node:20-alpine AS runner
+RUN apk add --no-cache bash
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -40,4 +41,5 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 USER nextjs
 EXPOSE 9000
 
-CMD ["node", "server.js"]
+# Explicit entrypoint so FC startup command can be left empty
+ENTRYPOINT ["node", "server.js"]

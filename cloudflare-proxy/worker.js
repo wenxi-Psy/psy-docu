@@ -1,20 +1,22 @@
 /**
- * Cloudflare Worker — Reverse Proxy for Vercel Deployment
+ * Cloudflare Worker — Reverse Proxy for Alibaba Cloud FC Deployment
  *
  * Purpose: Relay traffic from a Cloudflare Worker (accessible in mainland China)
- *          to the Vercel deployment that is blocked.
+ *          to the FC deployment. Also strips the platform-injected
+ *          "Content-Disposition: attachment" header that prevents browsers
+ *          from rendering HTML responses from *.fcapp.run domains.
  *
  * Deploy steps:
- *   1. Sign up at https://workers.cloudflare.com (free tier: 100k req/day)
- *   2. Create a new Worker, paste this script
- *   3. Set the TARGET_HOST constant below to your Vercel URL
- *   4. (Optional) Bind a custom domain to the Worker for better CN accessibility
+ *   1. Install wrangler: npm install -g wrangler
+ *   2. wrangler login
+ *   3. wrangler deploy  (from the cloudflare-proxy/ directory)
+ *   4. (Optional) Bind a custom domain via Cloudflare for better CN access
  *
- * Note: workers.dev subdomains may themselves be slow in some CN regions.
+ * Note: workers.dev subdomains may be slow in some CN regions.
  *       Binding a custom domain via Cloudflare is strongly recommended.
  */
 
-const TARGET_HOST = "psy-docu-git-main-wenxi-psys-projects.vercel.app";
+const TARGET_HOST = "psy-docu-dlhctqrbfg.cn-hangzhou.fcapp.run";
 
 export default {
   async fetch(request, env, ctx) {
@@ -25,48 +27,45 @@ export default {
 async function handleRequest(request) {
   const url = new URL(request.url);
 
-  // Rewrite hostname to the Vercel deployment
+  // Rewrite hostname to FC endpoint
   url.hostname = TARGET_HOST;
   url.port = "";
+  url.protocol = "https:";
 
-  // Forward all original headers, but set Host to the Vercel host
+  // Forward all original headers, set Host to FC host
   const headers = new Headers(request.headers);
   headers.set("Host", TARGET_HOST);
-  // Pass real visitor IP to Vercel for logging
   headers.set("X-Forwarded-Host", new URL(request.url).hostname);
 
   const proxyRequest = new Request(url.toString(), {
     method: request.method,
     headers,
     body: request.body,
-    redirect: "manual", // Handle redirects ourselves to rewrite Location headers
+    redirect: "manual", // Handle redirects to rewrite Location headers
   });
 
   let response = await fetch(proxyRequest);
 
-  // If Vercel redirects, rewrite the Location header so it points to THIS worker
+  // Build mutable response headers, stripping the FC-injected attachment header
+  const responseHeaders = new Headers(response.headers);
+  responseHeaders.delete("Content-Disposition");
+
+  // If FC redirects, rewrite the Location header to point back to this Worker
   if ([301, 302, 303, 307, 308].includes(response.status)) {
-    const location = response.headers.get("Location");
+    const location = responseHeaders.get("Location");
     if (location) {
-      const workerOrigin = new URL(request.url).origin;
       const locationUrl = new URL(location, `https://${TARGET_HOST}`);
       if (locationUrl.hostname === TARGET_HOST) {
         locationUrl.hostname = new URL(request.url).hostname;
+        locationUrl.protocol = new URL(request.url).protocol;
+        responseHeaders.set("Location", locationUrl.toString());
       }
-      const newHeaders = new Headers(response.headers);
-      newHeaders.set("Location", locationUrl.toString());
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders,
-      });
     }
   }
 
-  // Pass through response as-is (including Set-Cookie for auth)
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
-    headers: response.headers,
+    headers: responseHeaders,
   });
 }
